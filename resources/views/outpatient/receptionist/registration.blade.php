@@ -1,60 +1,66 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="p-6 bg-white shadow-2xl rounded-xl max-w-6xl mx-auto my-8">
+<div class="w-full min-h-screen bg-white shadow-2xl rounded-none p-10">
     
     <!-- Back Button -->
-    <div class="mb-4">
+    <div class="mb-6">
         <a href="{{ route('outpatient.dashboard') }}" 
            class="inline-flex items-center text-indigo-600 hover:text-indigo-800 transition duration-150 font-medium">
             <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
         </a>
     </div>
 
-    <h2 class="text-3xl font-extrabold text-gray-800 border-b-2 border-indigo-100 pb-3 mb-6">Patient Registration & Lookup</h2>
+    <h2 class="text-3xl font-extrabold text-gray-800 border-b-2 border-indigo-100 pb-4 mb-8">
+        Patient Registration & Lookup
+    </h2>
 
     <!-- Search Form -->
-    <form action="{{ url('/outpatient/search') }}" method="POST" class="flex space-x-3 mb-8 bg-gray-50 p-4 rounded-lg shadow-inner">
+    <form action="{{ url('/outpatient/search') }}" method="POST" 
+          class="flex flex-col md:flex-row md:space-x-3 space-y-3 md:space-y-0 mb-10 bg-gray-50 p-6 rounded-lg shadow-inner">
         @csrf
         <input type="text" name="search_term" placeholder="Search by National ID, Phone, or Patient ID" 
                value="{{ session('search_term') ?? old('search_term') }}"
                class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-700">
-        <button type="submit" class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150 transform hover:scale-[1.01]">
+        <button type="submit" 
+                class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150 transform hover:scale-[1.02]">
             <i class="fas fa-search mr-1"></i> Search
         </button>
     </form>
 
     <!-- Existing Patient Confirmation Block -->
     @if(isset($patient) && $patient)
-        <div class="border-l-4 border-green-500 p-6 bg-green-50 mb-8 rounded-lg shadow-md">
+        <div class="border-l-4 border-green-500 p-8 bg-green-50 mb-10 rounded-lg shadow-md">
             <h3 class="font-bold text-xl text-green-800 flex items-center">
                 <i class="fas fa-check-circle mr-2"></i> Patient Found!
             </h3>
-            <p class="text-green-700 mt-2">
+            <p class="text-green-700 mt-2 text-lg">
                 <strong>ID:</strong> {{ $patient->patient_id }} | 
                 <strong>Name:</strong> {{ $patient->name }} | 
                 <strong>Phone:</strong> {{ $patient->phone }}
             </p>
-            <p class="mt-4 text-green-700">Confirm details and click **'Start New Outpatient Visit'** to proceed to Triage.</p>
+            <p class="mt-4 text-green-700">Confirm details and click <strong>'Start New Outpatient Visit'</strong> to proceed to Triage.</p>
 
-            <form action="{{ url('/outpatient/store') }}" method="POST" class="mt-4">
+            <form action="{{ url('/outpatient/store') }}" method="POST" class="mt-5">
                 @csrf
                 <input type="hidden" name="existing_patient_id" value="{{ $patient->id }}">
-                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition shadow-lg">
-                    Start New Outpatient Visit
+                <button type="submit" 
+                        class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition shadow-lg font-semibold">
+                    <i class="fas fa-stethoscope mr-2"></i> Start New Outpatient Visit
                 </button>
             </form>
         </div>
     @else 
         <!-- New Patient Registration Form -->
-        <h3 class="text-xl font-semibold text-gray-700 mb-5">
+        <h3 class="text-2xl font-semibold text-gray-700 mb-6">
             Register New Patient
             @if(session('search_fail'))
-                <span class="text-red-500 text-sm ml-3">(Patient not found by search, please register below)</span>
+                <span class="text-red-500 text-sm ml-3">(Patient not found, please register below)</span>
             @endif
         </h3>
 
-        <form action="{{ url('/outpatient/store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 border border-gray-200 rounded-lg">
+        <form action="{{ url('/outpatient/store') }}" method="POST" 
+              class="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 border border-gray-200 rounded-lg bg-gray-50">
             @csrf
             
             <!-- Row 1: Name & Phone -->
@@ -107,17 +113,18 @@
                 @error('next_of_kin')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
 
-            <!-- Row 4: Address (Full Width) -->
+            <!-- Row 4: Address -->
             <div class="col-span-1 md:col-span-2">
                 <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address / Residence</label>
-                <textarea name="address" id="address" rows="2" 
-                              class="p-3 block w-full border border-gray-300 rounded-md @error('address') border-red-500 @enderror">{{ old('address') }}</textarea>
+                <textarea name="address" id="address" rows="3" 
+                          class="p-3 block w-full border border-gray-300 rounded-md @error('address') border-red-500 @enderror">{{ old('address') }}</textarea>
                 @error('address')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
 
             <!-- Submit Button -->
-            <div class="col-span-1 md:col-span-2 pt-4">
-                <button type="submit" class="w-full py-4 bg-green-600 text-white font-extrabold text-lg rounded-lg shadow-xl hover:bg-green-700 transition duration-150 transform hover:scale-[1.005]">
+            <div class="col-span-1 md:col-span-2 pt-6">
+                <button type="submit" 
+                        class="w-full py-4 bg-green-600 text-white font-extrabold text-lg rounded-lg shadow-xl hover:bg-green-700 transition duration-150 transform hover:scale-[1.01]">
                     <i class="fas fa-save mr-2"></i> Register & Start Outpatient Visit
                 </button>
             </div>

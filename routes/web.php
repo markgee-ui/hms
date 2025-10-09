@@ -6,6 +6,7 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TriageController; 
+use App\Http\Controllers\NotificationController;
 
 
 /*
@@ -42,6 +43,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard/outpatient', [DashboardController::class, 'index'])->name('outpatient.dashboard');
     Route::get('/search', [SearchController::class, 'index'])->name('search.index');
     Route::get('/notifications/fetch', [DashboardController::class, 'fetchNotifications']) ->name('notifications.fetch');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+
 
     
     // PATIENT REGISTRATION (Receptionist Role)
@@ -64,8 +68,12 @@ Route::group(['middleware' => 'auth'], function () {
     Route::prefix('triage')->group(function () {
         //this is triage for the receptionist top send tken to the nurse.
         Route::post('/triage/queue/{token}', [TriageController::class, 'sendToTriageQueue'])->name('triage.send_to_queue');
+        Route::get('/', [DashboardController::class, 'index'])->name('triage.index');
         Route::get('/start/{visit_token}', [TriageController::class, 'startTriage'])->name('triage.start');
         Route::post('/store/{visit_id}', [TriageController::class, 'storeTriage'])->name('triage.store');
+        Route::get('/triage/{token}/view', [TriageController::class, 'viewTriage'])->name('triage.view');
+        Route::get('/triage/{visit_token}/edit', [TriageController::class, 'edit'])->name('triage.edit');
+        Route::patch('/triage/{visit_token}/update', [TriageController::class, 'update'])->name('triage.update');
     });
     
     // WORKFLOW STEP 3: CONSULTATION (Doctor Role)

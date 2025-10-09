@@ -21,6 +21,7 @@ class Triage extends Model
         'weight',
         'chief_complaint',
         'symptoms',
+        'triage_category',
     ];
 
     /**

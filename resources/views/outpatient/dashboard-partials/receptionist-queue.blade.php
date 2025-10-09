@@ -1,4 +1,4 @@
-<div class="bg-white shadow-2xl rounded-xl p-6">
+<div class="bg-white shadow-2xl rounded-xl p-6 min-h-screen">
     <h3 class="text-2xl font-semibold mb-4 text-gray-800 border-b pb-2">
         Today's Patient Queue
     </h3>
@@ -7,7 +7,7 @@
     <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
         <!-- Register New Patient -->
         <a href="{{ route('outpatient.register') }}" 
-           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-md text-white bg-blue-600 hover:bg-blue-700 transition duration-150 transform hover:scale-[1.01]">
+           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-md text-white bg-blue-600 hover:bg-blue-700 transition duration-150 transform hover:scale-[1.02]">
             <i class="fas fa-user-plus mr-2"></i> Register New Patient
         </a>
 
@@ -27,6 +27,11 @@
                 <i class="fas fa-filter mr-1"></i> Apply
             </button>
 
+            <a href="{{ route('outpatient.dashboard', ['search' => request('search'), 'status' => request('status')]) }}" 
+               class="px-3 py-2 bg-indigo-500 text-white rounded-lg text-sm hover:bg-indigo-600 transition transform hover:scale-[1.02]">
+                <i class="fas fa-sync-alt mr-1"></i> Refresh
+            </a>
+
             <a href="{{ route('outpatient.dashboard') }}" 
                class="px-3 py-2 bg-gray-300 rounded-lg text-sm hover:bg-gray-400">
                 <i class="fas fa-times mr-1"></i> Clear
@@ -43,7 +48,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Patient Name</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Current Status</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Time Registered</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-300">
@@ -53,7 +58,6 @@
                     <td class="px-6 py-4 whitespace-nowrap text-gray-900 border-r border-gray-300">{{ $visit->patient->name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap border-r border-gray-300">
                         @php
-                            // Dynamic color based on status
                             $color = match($visit->status) {
                                 'Registered' => 'yellow',
                                 'Waiting for Triage' => 'blue',
@@ -67,39 +71,38 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-300">
                         {{ $visit->registration_date->format('H:i A') }}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <div class="flex flex-col space-y-1">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                        <div class="flex flex-wrap justify-center gap-2">
                             
-                            <!-- View Info -->
+                            <!-- View -->
                             <a href="{{ route('patient.view', $visit->patient->id) }}" 
-                               class="text-indigo-600 hover:text-indigo-900 inline-flex items-center">
-                                <i class="fas fa-eye mr-1 w-4"></i> View
-                            </a>
-                            
-                            <!-- Edit Info -->
-                            <a href="{{ route('patient.edit', $visit->patient->id) }}" 
-                               class="text-purple-600 hover:text-purple-900 inline-flex items-center">
-                                <i class="fas fa-edit mr-1 w-4"></i> Edit
+                               class="inline-flex items-center px-3 py-1.5 bg-indigo-500 text-white text-xs font-semibold rounded-lg hover:bg-indigo-600 transition">
+                                <i class="fas fa-eye mr-1"></i> View
                             </a>
 
-                            <!-- Triage/Next Step Action -->
+                            <!-- Edit -->
+                            <a href="{{ route('patient.edit', $visit->patient->id) }}" 
+                               class="inline-flex items-center px-3 py-1.5 bg-purple-500 text-white text-xs font-semibold rounded-lg hover:bg-purple-600 transition">
+                                <i class="fas fa-edit mr-1"></i> Edit
+                            </a>
+
+                            <!-- Conditional Buttons -->
                             @if ($visit->status == 'Registered')
-                                {{-- RECEPTIONIST ACTION: Send to Nurse Triage Queue (POST action) --}}
-                                <form action="{{ route('triage.send_to_queue', $visit->visit_token) }}" method="POST" class="inline-block">
+                                <form action="{{ route('triage.send_to_queue', $visit->visit_token) }}" method="POST">
                                     @csrf
-                                    {{-- Use a button that is styled like a link/action for consistency --}}
-                                    <button type="submit" class="text-blue-500 hover:text-blue-700 inline-flex items-center p-0 m-0 border-none bg-transparent font-medium">
-                                        <i class="fas fa-procedures mr-1 w-4"></i> Send to Triage
+                                    <button type="submit" 
+                                            class="inline-flex items-center px-3 py-1.5 bg-blue-500 text-white text-xs font-semibold rounded-lg hover:bg-blue-600 transition">
+                                        <i class="fas fa-procedures mr-1"></i> Send to Triage
                                     </button>
                                 </form>
                             @elseif ($visit->status == 'Waiting for Triage')
-                                <span class="text-blue-600 inline-flex items-center font-medium">
-                                    <i class="fas fa-user-clock mr-1 w-4"></i> Nurse Queue
+                                <span class="inline-flex items-center px-3 py-1.5 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-lg">
+                                    <i class="fas fa-user-clock mr-1"></i> In Nurse Queue
                                 </span>
                             @else
-                                {{-- Patient is completed, offer next action like Follow-up/History --}}
-                                <a href="{{ route('followup.view', $visit->visit_token) }}" class="text-green-500 hover:text-green-700 inline-flex items-center">
-                                    <i class="fas fa-history mr-1 w-4"></i> Follow-up
+                                <a href="{{ route('followup.view', $visit->visit_token) }}" 
+                                   class="inline-flex items-center px-3 py-1.5 bg-green-500 text-white text-xs font-semibold rounded-lg hover:bg-green-600 transition">
+                                    <i class="fas fa-history mr-1"></i> Follow-up
                                 </a>
                             @endif
                         </div>
