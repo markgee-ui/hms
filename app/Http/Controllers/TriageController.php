@@ -174,9 +174,8 @@ class TriageController extends Controller
      */
     public function update(Request $request, string $visit_token)
     {
-        // 1. Validation for the new set of inputs
+        // 1. Validation for the  set of inputs
         $validatedData = $request->validate([
-            // BP is now a single string, e.g., "120/80"
             'bp' => ['required', 'string', 'regex:/^\d{2,3}\/\d{2,3}$/'], 
             'temperature' => ['required', 'numeric', 'min:35.0', 'max:42.0'],
             'pulse' => ['required', 'integer', 'min:30', 'max:250'], 

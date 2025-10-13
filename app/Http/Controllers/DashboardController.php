@@ -24,17 +24,29 @@ class DashboardController extends Controller
          * FLOW COUNTS: All patients today grouped by status
          * -------------------------------------------------------------
          */
-        $data['flowCounts'] = Visit::select('status', DB::raw('count(*) as count'))
+          // Step 1: Fetch all specific status counts for today
+        $rawCounts = Visit::select('status', DB::raw('count(*) as count'))
             ->whereDate('registration_date', now()->toDateString())
             ->groupBy('status')
             ->pluck('count', 'status')
             ->toArray();
+        
+        // Step 2: Aggregate the detailed statuses into the main flow stages
+        $data['flowCounts'] = [
+            // Registrtiion queue: Patients currently in registration
+            'Registered' => $rawCounts['Registered'] ?? 0,
+            
+            // Triage Queue: Patients waiting for or currently in Triage
+            'Triage' => ($rawCounts['Waiting for Triage'] ?? 0) + ($rawCounts['In Triage'] ?? 0),
 
-        // Ensure all statuses exist even if 0
-        $allStatuses = ['Registered', 'Triage', 'Consultation', 'Lab/Rad', 'Pharmacy', 'Billing'];
-        foreach ($allStatuses as $status) {
-            $data['flowCounts'][$status] = $data['flowCounts'][$status] ?? 0;
-        }
+            // Consultation Queue: Patients waiting for the Doctor ('Triage Completed') or actively being seen ('In Consultation')
+            'Consultation' => ($rawCounts['Triage Completed'] ?? 0) + ($rawCounts['In Consultation'] ?? 0),
+            
+            // Subsequent stages
+            'Lab/Rad' => $rawCounts['Lab/Rad'] ?? 0,
+            'Pharmacy' => $rawCounts['Pharmacy'] ?? 0,
+            'Billing' => $rawCounts['Billing'] ?? 0,
+        ];
 
         /**
          * -------------------------------------------------------------
@@ -80,7 +92,16 @@ class DashboardController extends Controller
                     $query->where('status', $request->status);
                 }
                 // --- END BASE LOGIC ---
-                
+                  // --- NEW LOGIC: Apply Triage Category/Priority Filter (using whereHas) ---
+              if ($request->filled('triage_priority')) {
+                 $priority = $request->triage_priority;
+        
+                   // Use whereHas to filter Visits based on a condition in the related Triage model
+                  $query->whereHas('triage', function ($t) use ($priority) {
+               // Using the confirmed column name: 'triage_category'
+                    $t->where('triage_category', $priority);
+                  });
+                }
                 // Apply search filter
                 if ($request->filled('search')) {
                     $search = $request->search;
@@ -108,13 +129,36 @@ class DashboardController extends Controller
 
                     ->paginate(10); 
                 break;
-                
+              //doctor function start 10/13/25  
             case 'doctor':
-                $data['consultationQueue'] = Visit::with(['patient', 'triage'])
-                    ->where('status', 'Triage Completed ')
-                    ->whereDate('registration_date', now()->toDateString())
-                    ->orderBy('updated_at', 'asc')
-                    ->get();
+                 // WORKFLOW STEP 3: DOCTOR'S CONSULTATION QUEUE
+                $query = Visit::with(['patient', 'triage', 'consultation']);
+                // Show patients who have completed triage but not yet completed consultation
+                if (!$request->filled('status')) {
+                    $query->where('status', 'Triage Completed'); // Removed whereDate constraint
+                } else {
+                    // Filter by a specific status (all dates)
+                    $query->where('status', $request->status); // Removed whereDate constraint
+                }
+
+                // Apply search filter (by Patient Name or Visit Token)
+                if ($request->filled('search')) {
+                    $search = $request->search;
+                    $query->where(function ($q) use ($search) {
+                        $q->whereHas('patient', function ($p) use ($search) {
+                            $p->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhere('visit_token', 'like', "%{$search}%");
+                    });
+                }
+                
+                // Apply dynamic sorting and pagination
+                $data['consultationQueue'] = $query
+                    // Primary Sort: Prioritize 'Triage Completed' (waiting) first, then 'In Consultation'.
+                    ->orderByRaw("FIELD(status, 'Triage Completed', 'In Consultation', 'Consultation Completed')")
+                    // Secondary Sort: Oldest patient waiting in the 'Triage Completed' status first (Time is proxy for queue time).
+                    ->orderBy('updated_at', 'asc') 
+                    ->paginate(10);
                 break;
 
             default:

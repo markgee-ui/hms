@@ -6,6 +6,7 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TriageController; 
+use App\Http\Controllers\Doctor\ConsultationController;
 use App\Http\Controllers\NotificationController;
 
 
@@ -75,10 +76,12 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/triage/{visit_token}/edit', [TriageController::class, 'edit'])->name('triage.edit');
         Route::patch('/triage/{visit_token}/update', [TriageController::class, 'update'])->name('triage.update');
     });
-    
-    // WORKFLOW STEP 3: CONSULTATION (Doctor Role)
-    // Placeholder route based on link in the Doctor Dashboard Queue
-    Route::get('/consultation/start/{visit_token}', [/* Placeholder Controller */ 'ConsultationController@startConsultation'])->name('consultation.start');
+
+     // WORKFLOW STEP 3: CONSULTATION (Doctor Role)
+    Route::prefix('consultation')->group(function () { // <-- New Route Group
+        Route::get('/start/{visit_token}', [ConsultationController::class, 'startConsultation'])->name('consultation.start');
+        Route::post('/store/{visit}', [ConsultationController::class, 'storeOrUpdate'])->name('consultation.store'); // Assuming route model binding for Visit
+    });
 
     // ... other future workflow steps (Lab, Pharmacy, Billing) will follow here ...
 });

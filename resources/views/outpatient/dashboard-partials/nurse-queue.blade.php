@@ -23,7 +23,7 @@
                 <!-- NEW: Triage Priority Filter -->
                 <select name="triage_priority" onchange="this.form.submit()" class="py-3 px-4 border border-gray-300 rounded-lg shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
                     <option value="">All Priorities</option>
-                    @foreach (['Immediate', 'Urgent', 'Standard', 'Routine'] as $priority)
+                    @foreach (['Emergency', 'Urgent', 'Non-Urgent', 'Routine'] as $priority)
                         <option value="{{ $priority }}" {{ request('triage_priority') == $priority ? 'selected' : '' }}>{{ $priority }}</option>
                     @endforeach
                 </select>
@@ -32,6 +32,7 @@
                     <option value="">All Triage Statuses</option>
                     <option value="Waiting for Triage" {{ request('status') == 'Waiting for Triage' ? 'selected' : '' }}>Waiting for Triage</option>
                     <option value="Triage Completed" {{ request('status') == 'Triage Completed' ? 'selected' : '' }}>Triage Completed</option>
+                    
                 </select>
 
                 @if(request()->filled('search') || request()->filled('status') || request()->filled('triage_priority'))
@@ -85,7 +86,7 @@
     $priorityStyles = [
         'Emergency' => ['bg' => 'bg-red-600', 'text' => 'text-white', 'icon' => 'fas fa-exclamation-triangle'],
         'Urgent' => ['bg' => 'bg-orange-500', 'text' => 'text-white', 'icon' => 'fas fa-fire'],
-        'Standard' => ['bg' => 'bg-yellow-400', 'text' => 'text-gray-900', 'icon' => 'fas fa-clock'],
+        'Non-Urgent' => ['bg' => 'bg-yellow-400', 'text' => 'text-gray-900', 'icon' => 'fas fa-clock'],
         'Routine' => ['bg' => 'bg-green-600', 'text' => 'text-white', 'icon' => 'fas fa-check-circle'],
         'N/A' => ['bg' => 'bg-gray-400', 'text' => 'text-white', 'icon' => 'fas fa-minus-circle'],
     ];
