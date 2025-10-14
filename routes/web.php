@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TriageController; 
 use App\Http\Controllers\Doctor\ConsultationController;
+use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\NotificationController;
 
 
@@ -46,7 +47,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/notifications/fetch', [DashboardController::class, 'fetchNotifications']) ->name('notifications.fetch');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
-
+    Route::get('/outpatient/history', [ConsultationController::class, 'showPatientHistoryList'])->name('consultation.history');
 
     
     // PATIENT REGISTRATION (Receptionist Role)
@@ -81,7 +82,24 @@ Route::group(['middleware' => 'auth'], function () {
     Route::prefix('consultation')->group(function () { // <-- New Route Group
         Route::get('/start/{visit_token}', [ConsultationController::class, 'startConsultation'])->name('consultation.start');
         Route::post('/store/{visit}', [ConsultationController::class, 'storeOrUpdate'])->name('consultation.store'); // Assuming route model binding for Visit
+        Route::get('/view/{visit_token}', [ConsultationController::class, 'viewConsultation'])->name('consultation.view');
+        Route::get('/outpatient/consultation/labs', [ConsultationController::class, 'laboratoryQueue'])->name('consultation.laboratory_queue');
     });
+        // WORKFLOW STEP 4: LAB/RAD (Lab/Radiology Role)
+    // Protected by 'labtech' role middleware
+    Route::prefix('lab')->name('lab.')->group(function () {
+    // Main queue view (for specific lab list view, though dashboard handles the main display)
+    Route::get('/queue', [LabController::class, 'dashboard'])->name('dashboard'); 
+    
+    // Form to process a specific lab request
+    Route::get('/requests/{labRequest}/process', [LabController::class, 'processRequest'])->name('request.process');
+    
+    // Endpoint to store the results
+    Route::post('/requests/{labRequest}/store', [LabController::class, 'storeResults'])->name('request.store_results');
+});
 
+
+        // WORKFLOW STEP 5: PHARMACY (Pharmacist Role)
+        // WORKFLOW STEP 6: BILLING (Billing Role)
     // ... other future workflow steps (Lab, Pharmacy, Billing) will follow here ...
 });

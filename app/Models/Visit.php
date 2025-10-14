@@ -18,6 +18,7 @@ class Visit extends Model
         'visit_type',
         'status',
         'registration_date',
+        'doctor_id', 
     ];
 
     /**

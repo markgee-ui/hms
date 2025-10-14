@@ -21,9 +21,9 @@
         @csrf
         <input type="text" name="search_term" placeholder="Search by National ID, Phone, or Patient ID" 
                value="{{ session('search_term') ?? old('search_term') }}"
-               class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-700">
+               class="flex-1 p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700">
         <button type="submit" 
-                class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150 transform hover:scale-[1.02]">
+                class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 transition duration-150 transform hover:scale-[1.02]">
             <i class="fas fa-search mr-1"></i> Search
         </button>
     </form>
@@ -45,7 +45,7 @@
                 @csrf
                 <input type="hidden" name="existing_patient_id" value="{{ $patient->id }}">
                 <button type="submit" 
-                        class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition shadow-lg font-semibold">
+                        class="bg-indigo-600 text-white px-8 py-3 rounded-md hover:bg-indigo-700 transition shadow-lg font-semibold">
                     <i class="fas fa-stethoscope mr-2"></i> Start New Outpatient Visit
                 </button>
             </form>
@@ -78,7 +78,7 @@
                 @error('phone')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
 
-            <!-- Row 2: National ID & Age -->
+            <!-- Row 2: National ID & Date of Birth -->
             <div>
                 <label for="national_id" class="block text-sm font-medium text-gray-700 mb-1">National ID (Optional)</label>
                 <input type="text" name="national_id" id="national_id" value="{{ old('national_id') }}"
@@ -86,18 +86,19 @@
                 @error('national_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
 
+            <!-- New Field: Date of Birth -->
             <div>
-                <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age <span class="text-red-500">*</span></label>
-                <input type="number" name="age" id="age" required value="{{ old('age') }}" min="0" max="120"
-                        class="p-3 block w-full border border-gray-300 rounded-md @error('age') border-red-500 @enderror">
-                @error('age')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                <label for="date_of_birth" class="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span class="text-red-500">*</span></label>
+                <input type="date" name="date_of_birth" id="date_of_birth" required value="{{ old('date_of_birth') }}"
+                        class="p-3 block w-full border border-gray-300 rounded-md @error('date_of_birth') border-red-500 @enderror">
+                @error('date_of_birth')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
 
-            <!-- Row 3: Gender & Next of Kin -->
+            <!-- Row 3: Gender & Calculated Age -->
             <div>
                 <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender <span class="text-red-500">*</span></label>
                 <select name="gender" id="gender" required 
-                         class="p-3 block w-full border border-gray-300 rounded-md @error('gender') border-red-500 @enderror">
+                          class="p-3 block w-full border border-gray-300 rounded-md @error('gender') border-red-500 @enderror">
                     <option value="">Select Gender</option>
                     <option value="Male" {{ old('gender') == 'Male' ? 'selected' : '' }}>Male</option>
                     <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
@@ -106,29 +107,88 @@
                 @error('gender')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
             
+            <!-- Calculated Age Display (New) -->
+            <div>
+                <label for="age_display" class="block text-sm font-medium text-gray-700 mb-1">Calculated Age (Years)</label>
+                <input type="text" id="age_display" value="{{ old('age') }}" readonly
+                        class="p-3 block w-full bg-gray-200 border border-gray-300 rounded-md text-gray-600 cursor-not-allowed">
+                <!-- Hidden input for submitting the age to the server -->
+                <input type="hidden" name="age" id="age_hidden" required value="{{ old('age') }}">
+                @error('age')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+            </div>
+
+            <!-- Row 4: Next of Kin & Address -->
             <div>
                 <label for="next_of_kin" class="block text-sm font-medium text-gray-700 mb-1">Next of Kin Contact</label>
                 <input type="text" name="next_of_kin" id="next_of_kin" value="{{ old('next_of_kin') }}"
                         class="p-3 block w-full border border-gray-300 rounded-md @error('next_of_kin') border-red-500 @enderror">
                 @error('next_of_kin')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
-
-            <!-- Row 4: Address -->
-            <div class="col-span-1 md:col-span-2">
+            
+            <div class="col-span-1">
                 <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address / Residence</label>
                 <textarea name="address" id="address" rows="3" 
                           class="p-3 block w-full border border-gray-300 rounded-md @error('address') border-red-500 @enderror">{{ old('address') }}</textarea>
                 @error('address')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
 
+
             <!-- Submit Button -->
             <div class="col-span-1 md:col-span-2 pt-6">
                 <button type="submit" 
-                        class="w-full py-4 bg-green-600 text-white font-extrabold text-lg rounded-lg shadow-xl hover:bg-green-700 transition duration-150 transform hover:scale-[1.01]">
+                        class="w-full py-4 bg-green-600 text-white font-extrabold text-lg rounded-md shadow-xl hover:bg-green-700 transition duration-150 transform hover:scale-[1.01]">
                     <i class="fas fa-save mr-2"></i> Register & Start Outpatient Visit
                 </button>
             </div>
         </form>
     @endif
 </div>
+
+<script>
+    /**
+     * Calculates the age in years based on the Date of Birth input field.
+     */
+    document.addEventListener('DOMContentLoaded', function () {
+        const dobInput = document.getElementById('date_of_birth');
+        const ageDisplay = document.getElementById('age_display');
+        const ageHidden = document.getElementById('age_hidden');
+
+        function calculateAge() {
+            const dobString = dobInput.value;
+            if (!dobString) {
+                ageDisplay.value = '';
+                ageHidden.value = '';
+                return;
+            }
+
+            const birthDate = new Date(dobString);
+            const today = new Date();
+
+            let ageYears = today.getFullYear() - birthDate.getFullYear();
+            const monthDifference = today.getMonth() - birthDate.getMonth();
+            
+            // Adjust age if the birth date hasn't occurred yet this year
+            if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+                ageYears--;
+            }
+
+            // Ensure age is not negative (in case of future date selection, although 'max' attribute should prevent this)
+            if (ageYears < 0) {
+                ageYears = 0;
+            }
+            
+            ageDisplay.value = ageYears;
+            ageHidden.value = ageYears;
+        }
+
+        // Set the max date to today to prevent future dates
+        dobInput.setAttribute('max', new Date().toISOString().split('T')[0]);
+
+        // Calculate age on initial load (for validation errors/old input)
+        calculateAge();
+
+        // Attach event listener to calculate age on date change
+        dobInput.addEventListener('change', calculateAge);
+    });
+</script>
 @endsection

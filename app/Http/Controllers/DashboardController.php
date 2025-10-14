@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Visit;
+use App\Models\LabRequest;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,7 +27,7 @@ class DashboardController extends Controller
          */
           // Step 1: Fetch all specific status counts for today
         $rawCounts = Visit::select('status', DB::raw('count(*) as count'))
-            ->whereDate('registration_date', now()->toDateString())
+            // ->whereDate('registration_date', now()->toDateString())
             ->groupBy('status')
             ->pluck('count', 'status')
             ->toArray();
@@ -41,7 +42,7 @@ class DashboardController extends Controller
 
             // Consultation Queue: Patients waiting for the Doctor ('Triage Completed') or actively being seen ('In Consultation')
             'Consultation' => ($rawCounts['Triage Completed'] ?? 0) + ($rawCounts['In Consultation'] ?? 0),
-            
+    
             // Subsequent stages
             'Lab/Rad' => $rawCounts['Lab/Rad'] ?? 0,
             'Pharmacy' => $rawCounts['Pharmacy'] ?? 0,
@@ -135,12 +136,21 @@ class DashboardController extends Controller
                 $query = Visit::with(['patient', 'triage', 'consultation']);
                 // Show patients who have completed triage but not yet completed consultation
                 if (!$request->filled('status')) {
-                    $query->where('status', 'Triage Completed'); // Removed whereDate constraint
+                    $query->whereIn('status', ['Triage Completed','consultation']); // Removed whereDate constraint
                 } else {
                     // Filter by a specific status (all dates)
                     $query->where('status', $request->status); // Removed whereDate constraint
                 }
-
+                // --- NEW LOGIC: Apply Triage Category/Priority Filter (using whereHas) ---
+                if ($request->filled('triage_priority')) {
+                 $priority = $request->triage_priority;
+        
+                   // Use whereHas to filter Visits based on a condition in the related Triage model
+                  $query->whereHas('triage', function ($t) use ($priority) {
+               // Using the confirmed column name: 'triage_category'
+                    $t->where('triage_category', $priority);
+                  });
+                }
                 // Apply search filter (by Patient Name or Visit Token)
                 if ($request->filled('search')) {
                     $search = $request->search;
@@ -160,6 +170,42 @@ class DashboardController extends Controller
                     ->orderBy('updated_at', 'asc') 
                     ->paginate(10);
                 break;
+
+                case 'labtech':
+                // WORKFLOW STEP 4: LAB TECHNICIAN'S QUEUE
+                $query = LabRequest::with(['visit.patient', 'doctor']);
+
+                // Filter: Show all 'Pending' requests AND any 'In Progress' requests assigned to the current tech.
+                $query->where(function ($q) use ($user) {
+                    $q->where('status', 'Pending')
+                      ->orWhere(function ($q2) use ($user) {
+                          $q2->where('status', 'In Progress')
+                             ->where('lab_tech_id', $user->id);
+                      });
+                });
+
+                // Apply search filter (by Patient Name or Visit Token)
+                if ($request->filled('search')) {
+                    $search = $request->search;
+                    $query->where(function ($q) use ($search) {
+                        // Search by patient name via visit
+                        $q->whereHas('visit.patient', function ($p) use ($search) {
+                            $p->where('name', 'like', "%{$search}%");
+                        })
+                        // Search by visit token via visit
+                        ->orWhereHas('visit', function ($v) use ($search) {
+                            $v->where('visit_token', 'like', "%{$search}%");
+                        });
+                    });
+                }
+
+                // Apply sorting: Prioritize Pending requests, then oldest requests first
+                $data['labQueue'] = $query
+                    ->orderByRaw("FIELD(status, 'Pending', 'In Progress', 'Completed')")
+                    ->orderBy('created_at', 'asc')
+                    ->paginate(10);
+                break;
+
 
             default:
                 // Optional: handle other roles gracefully
