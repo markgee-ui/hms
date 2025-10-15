@@ -18,6 +18,7 @@ class Visit extends Model
         'visit_type',
         'status',
         'registration_date',
+        'doctor_id', 
     ];
 
     /**
@@ -43,7 +44,24 @@ class Visit extends Model
     {
         return $this->hasOne(Consultation::class);
     }
+    /**
+     * Define the relationship: A Visit has many LabRequests. (Workflow Step 4)
+     */
+     /**
+     * Define the relationship: A Visit can have multiple LabRequests. (NEW)
+     */
+    public function labRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(LabRequest::class);
+    }
 
+    /**
+     * Define the relationship: A Visit has many Prescriptions. (Workflow Step 5)
+     */
+    public function prescriptions()
+    {
+        return $this->hasMany(Prescription::class);
+    }
     /**
      * Define the relationship: A Visit has one Billing record. (Workflow Step 6)
      */
@@ -51,6 +69,11 @@ class Visit extends Model
     {
         return $this->hasOne(Billing::class);
     }
+
+    public function doctor()
+{
+    return $this->belongsTo(User::class, 'doctor_id');
+}
 
     /**
      * The attributes that should be cast.

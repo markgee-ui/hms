@@ -1,0 +1,142 @@
+<div class="container mx-auto p-4 sm:p-6">
+    <h1 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">
+        Pharmacy Queue
+    </h1>
+    <p class="text-gray-600 mb-8">
+        This queue displays all prescriptions sent by doctors that are currently awaiting dispensation 
+        in the <strong>Pharmacy</strong>. You can search, filter, and manage each request below.
+    </p>
+
+    <!-- Search & Filter Form -->
+    <form method="GET" action="{{ route('outpatient.dashboard') }}"
+          class="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <input type="hidden" name="role" value="pharmacist">
+
+        <!-- Search -->
+        <div class="relative flex-grow w-full md:w-1/3">
+            <input 
+                type="text"
+                name="search"
+                placeholder="Search by Patient Name or Token..."
+                value="{{ request('search') }}"
+                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg 
+                       focus:ring-blue-500 focus:border-blue-500 text-gray-800"
+            >
+            <i class="fas fa-search absolute left-3 top-4 text-gray-400"></i>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <!-- Status Filter -->
+            <select name="status" onchange="this.form.submit()" 
+                class="py-3 px-4 border border-gray-300 rounded-lg shadow-sm 
+                       focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Prescriptions</option>
+                <option value="Pending Pharmacy" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending Pharmacy</option>
+                <option value="Dispensed" {{ request('status') == 'Dispensed' ? 'selected' : '' }}>Dispensed</option>
+            </select>
+
+            <!-- Clear / Filter Buttons -->
+            @if(request()->filled('search') || request()->filled('status'))
+                <a href="{{ route('outpatient.dashboard', ['role' => 'pharmacist']) }}"
+                   class="py-3 px-4 bg-gray-200 text-gray-700 rounded-lg shadow-sm hover:bg-gray-300 flex items-center justify-center">
+                    Clear
+                </a>
+            @else
+                <button type="submit"
+                    class="py-3 px-4 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700">
+                    Filter
+                </button>
+            @endif
+
+            <!-- Refresh -->
+            <a href="{{ route('outpatient.dashboard', [
+                    'role' => 'pharmacist',
+                    'search' => request('search'),
+                    'status' => request('status')
+                ]) }}" 
+               class="py-3 px-4 bg-purple-600 text-white rounded-lg shadow-sm hover:bg-purple-700 transition transform hover:scale-[1.05] flex items-center justify-center">
+                <i class="fas fa-sync-alt mr-2"></i> Refresh
+            </a>
+        </div>
+    </form>
+
+    <!-- Pharmacy Queue Table -->
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-300">
+        @if($data['pharmacyQueue']->isEmpty())
+            <div class="p-8 text-center text-gray-500 border-t border-gray-300">
+                <i class="fas fa-pills text-4xl mb-3 text-blue-500"></i>
+                <p class="text-lg font-semibold">
+                    The pharmacy queue is clear! No pending prescriptions at the moment.
+                </p>
+            </div>
+        @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full border-collapse border border-gray-300 text-sm">
+                    <thead class="bg-gray-100 border-b border-gray-300">
+                        <tr class="divide-x divide-gray-300">
+                            <th class="px-6 py-3 text-left font-semibold text-gray-600 border-b border-gray-300">
+                                Patient Name / Token
+                            </th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-600 border-b border-gray-300">
+                                Prescribed Drugs (Doctor)
+                            </th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-600 border-b border-gray-300">
+                                Date Issued
+                            </th>
+                            <th class="px-6 py-3 text-right font-semibold text-gray-600 border-b border-gray-300">
+                                Action
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-300">
+                        @foreach($data['pharmacyQueue'] as $prescription)
+                            <tr class="hover:bg-blue-50 transition duration-150 divide-x divide-gray-300">
+                                <td class="px-6 py-4 text-gray-900">
+                                    <div class="font-medium">{{ $prescription->visit->patient->name ?? 'N/A' }}</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Token: {{ $prescription->visit->visit_token ?? 'N/A' }}
+                                    </div>
+                                </td>
+
+                                <td class="px-6 py-4 text-gray-700">
+                                    <div class="font-semibold text-gray-900 text-xs sm:text-sm">
+                                      {{ $prescription->prescription_details ?? 'No details provided' }}
+                                        <span class="text-xs text-gray-500 block sm:inline">
+                                            (Dr. {{ $prescription->doctor->name ?? 'Unassigned' }})
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td class="px-6 py-4 text-gray-500">
+                                    {{ $prescription->created_at->diffForHumans() }}
+                                </td>
+
+                                <td class="px-6 py-4 text-right">
+                                    @if($prescription->status == 'Pending')
+                                        <a href="{{ route('pharmacy.process', $prescription->id) }}"
+                                            class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm 
+                                                   text-white bg-green-600 hover:bg-green-700 transition">
+                                            Dispense
+                                        </a>
+                                    @else
+                                        <span class="text-xs text-green-600 font-semibold border border-green-400 px-3 py-1 rounded-full">
+                                            Dispensed
+                                        </span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                @if ($data['pharmacyQueue']->lastPage() > 1)
+                    <div class="p-4 flex justify-center border-t border-gray-300 bg-gray-50">
+                        {{ $data['pharmacyQueue']->appends(request()->except('page'))->links() }}
+                    </div>
+                @endif
+            </div>
+        @endif
+    </div>
+</div>

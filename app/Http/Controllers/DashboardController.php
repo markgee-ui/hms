@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Visit;
+use App\Models\LabRequest;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use App\Models\Prescription;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -26,7 +28,7 @@ class DashboardController extends Controller
          */
           // Step 1: Fetch all specific status counts for today
         $rawCounts = Visit::select('status', DB::raw('count(*) as count'))
-            ->whereDate('registration_date', now()->toDateString())
+            // ->whereDate('registration_date', now()->toDateString())
             ->groupBy('status')
             ->pluck('count', 'status')
             ->toArray();
@@ -41,7 +43,7 @@ class DashboardController extends Controller
 
             // Consultation Queue: Patients waiting for the Doctor ('Triage Completed') or actively being seen ('In Consultation')
             'Consultation' => ($rawCounts['Triage Completed'] ?? 0) + ($rawCounts['In Consultation'] ?? 0),
-            
+    
             // Subsequent stages
             'Lab/Rad' => $rawCounts['Lab/Rad'] ?? 0,
             'Pharmacy' => $rawCounts['Pharmacy'] ?? 0,
@@ -135,12 +137,21 @@ class DashboardController extends Controller
                 $query = Visit::with(['patient', 'triage', 'consultation']);
                 // Show patients who have completed triage but not yet completed consultation
                 if (!$request->filled('status')) {
-                    $query->where('status', 'Triage Completed'); // Removed whereDate constraint
+                    $query->whereIn('status', ['Triage Completed','consultation']); // Removed whereDate constraint
                 } else {
                     // Filter by a specific status (all dates)
                     $query->where('status', $request->status); // Removed whereDate constraint
                 }
-
+                // --- NEW LOGIC: Apply Triage Category/Priority Filter (using whereHas) ---
+                if ($request->filled('triage_priority')) {
+                 $priority = $request->triage_priority;
+        
+                   // Use whereHas to filter Visits based on a condition in the related Triage model
+                  $query->whereHas('triage', function ($t) use ($priority) {
+               // Using the confirmed column name: 'triage_category'
+                    $t->where('triage_category', $priority);
+                  });
+                }
                 // Apply search filter (by Patient Name or Visit Token)
                 if ($request->filled('search')) {
                     $search = $request->search;
@@ -160,6 +171,74 @@ class DashboardController extends Controller
                     ->orderBy('updated_at', 'asc') 
                     ->paginate(10);
                 break;
+
+              case 'labtech':
+                                    // WORKFLOW STEP 4: LAB TECHNICIAN'S QUEUE
+                                     // We now query the Visit model and eager load the LabRequests (which contain the doctor info).
+                    $query = Visit::with(['patient', 'labRequests.doctor']);
+
+                            // CRITICAL FILTER: Only include Visits that are currently 
+                               // in the 'Lab/Rad' status. This is the only mandatory filter.
+                     $query->where('status', 'Lab/Rad'); // Direct filter on the Visit model
+
+                        // NOTE: The LabQueue will now contain Visit objects.
+                        // The Blade view (outpatient.lab.dashboard) must be updated to access
+                        // LabRequests via $visit->labRequests.
+
+                        // Apply search filter (by Patient Name or Visit Token)
+                     if ($request->filled('search')) {
+                  $search = $request->search;
+                    $query->where(function ($q) use ($search) {
+                           // Search by patient name (direct relationship on Visit)
+                       $q->whereHas('patient', function ($p) use ($search) {
+                        $p->where('name', 'like', "%{$search}%");
+                      })
+                            // Or by visit token (direct column on Visit model)
+                       ->orWhere('visit_token', 'like', "%{$search}%");
+                      });
+                  }
+
+                           // Sorting: Show the oldest patients/visits first (using registration_date from Visit)
+                  $data['labQueue'] = $query
+                    ->orderBy('registration_date', 'asc')
+                    ->paginate(10);
+                 break;
+
+             case 'pharmacist':
+    // WORKFLOW STEP 5: PHARMACIST'S QUEUE
+    // Fetch prescriptions that have been sent from doctors and are pending dispensation.
+
+    $query = Prescription::with(['visit.patient', 'doctor']);
+
+    // Only prescriptions currently awaiting pharmacy action
+    $query->where('status', 'Pending');
+
+    // Optional search by patient name or visit token
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->whereHas('patient', function ($p) use ($search) {
+                $p->where('name', 'like', "%{$search}%");
+            })
+            ->orWhereHas('visit', function ($v) use ($search) {
+                $v->where('visit_token', 'like', "%{$search}%");
+            });
+        });
+    }
+
+    // Optional filter by status (Pending Pharmacy or Dispensed)
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+
+    // Sorting and pagination
+    $data['pharmacyQueue'] = $query
+        ->orderBy('created_at', 'desc')
+        ->paginate(10);
+
+    break;
+
+
 
             default:
                 // Optional: handle other roles gracefully

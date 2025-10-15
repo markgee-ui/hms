@@ -43,11 +43,25 @@
                 </a>
                 @endif
                 
-                <a href="#" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-700 transition duration-150">
-                    <i class="fas fa-history text-lg"></i>
-                    <span>Patient History</span>
+                @if(Auth::check() && Auth::user()->role === 'doctor')
+                <a href="{{ route('consultation.laboratory_queue') }}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-700 transition duration-150 @if(request()->is('outpatient/consulation/labs*')) bg-gray-700 @endif">
+                <i class="fas fa-flask text-lg"></i>
+                <span>Labs</span>
                 </a>
-
+                @endif
+                 
+                @if(Auth::check() && Auth::user()->role === 'doctor')
+                <a href="{{ route('history') }}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-700 transition duration-150 @if(request()->is('history')) bg-gray-700 @endif">
+                <i class="fas fa-prescription-bottle-alt text-lg"></i>
+                <span>Prescriptions</span>
+                </a>
+                @endif
+                 @if(Auth::check() && Auth::user()->role === 'labtech')
+                <a href="{{ route('lab.results.lab_queue') }}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-700 transition duration-150 @if(request()->is('lab/outpatient/lab/results')) bg-gray-700 @endif">
+                <i class="fas fa-flask text-lg"></i>
+                <span>Results</span>
+                </a>
+                @endif  
                 <a href="#" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-700 transition duration-150">
                     <i class="fas fa-cog text-lg"></i>
                     <span>Settings</span>

@@ -7,6 +7,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TriageController; 
 use App\Http\Controllers\Doctor\ConsultationController;
+use App\Http\Controllers\Lab\LabController;
+use App\Http\Controllers\pharmacy\PharmacyController;
 use App\Http\Controllers\NotificationController;
 
 
@@ -47,7 +49,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
 
-
     
     // PATIENT REGISTRATION (Receptionist Role)
     //WORKFLOW STEP 1: REGISTRATION (Receptionist Role)
@@ -81,7 +82,28 @@ Route::group(['middleware' => 'auth'], function () {
     Route::prefix('consultation')->group(function () { // <-- New Route Group
         Route::get('/start/{visit_token}', [ConsultationController::class, 'startConsultation'])->name('consultation.start');
         Route::post('/store/{visit}', [ConsultationController::class, 'storeOrUpdate'])->name('consultation.store'); // Assuming route model binding for Visit
+        Route::get('/view/{visit_token}', [ConsultationController::class, 'viewConsultation'])->name('consultation.view');
+        Route::get('/outpatient/consultation/labs', [ConsultationController::class, 'laboratoryQueue'])->name('consultation.laboratory_queue');
+        Route::get('/consultation/{visit_token}/review', [ConsultationController::class, 'reviewResults'])->name('consultation.review');
+        Route::post('/consultation/{visit_token}/prescribe', [ConsultationController::class, 'storePrescription'])->name('consultation.prescribe');
+        Route::get('/prescriptions', [ConsultationController::class, 'prescriptionHistory']) ->name('history');
+
+    });
+        // WORKFLOW STEP 4: LAB/RAD (Lab/Radiology Role)
+   Route::prefix('lab')->name('lab.')->group(function () {
+    // Form to process a specific lab request
+       Route::get('/requests/{labRequest}/process', [LabController::class, 'processRequest'])->name('request.process');
+       Route::post('/requests/{labRequest}/store', [LabController::class, 'storeResults'])->name('results.store');
+       Route::get('/outpatient/lab/results', [LabController::class, 'labQueue'])->name('results.lab_queue');
     });
 
+
+
+        // WORKFLOW STEP 5: PHARMACY (Pharmacist Role)
+
+    Route::prefix('pharmacy')->name('pharmacy.')->group(function () {
+        Route::get('/pharmacy/dispense/{id}', [PharmacyController::class, 'process'])->name('process');
+    });
+        // WORKFLOW STEP 6: BILLING (Billing Role)
     // ... other future workflow steps (Lab, Pharmacy, Billing) will follow here ...
 });
