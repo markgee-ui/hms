@@ -94,6 +94,38 @@
             </div>
         </div>
 
+        {{-- NEW: Lab and Radiology Orders Section --}}
+        {{-- This section is hidden by default and toggled by JavaScript --}}
+        <div id="lab-rad-orders-section" class="mt-8 pt-6 border-t border-gray-200 @if(old('next_step') !== 'Lab/Rad' && empty($consultation->lab_orders) && empty($consultation->radiology_orders)) hidden @endif">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">
+                <i class="fas fa-vials mr-2 text-yellow-600"></i> **Lab & Radiology Orders**
+            </h3>
+
+            <div class="space-y-4">
+                <div>
+                    <label for="lab_orders" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-flask mr-1 text-yellow-600"></i> Laboratory Test Orders
+                    </label>
+                    {{-- Note: Assuming $consultation can hold lab_orders data --}}
+                    <textarea name="lab_orders" id="lab_orders" rows="3"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-yellow-500 focus:border-yellow-500"
+                        placeholder="e.g., Complete Blood Count (CBC), Urine Analysis, Fasting Blood Sugar (FBS)">{{ old('lab_orders', $consultation->lab_orders ?? '') }}</textarea>
+                    @error('lab_orders')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                
+                <div>
+                    <label for="radiology_orders" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-x-ray mr-1 text-red-600"></i> Radiology/Imaging Orders
+                    </label>
+                    {{-- Note: Assuming $consultation can hold radiology_orders data --}}
+                    <textarea name="radiology_orders" id="radiology_orders" rows="3"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-red-500 focus:border-red-500"
+                        placeholder="e.g., Chest X-Ray (CXR), Abdominal Ultrasound, CT Head w/o contrast.">{{ old('radiology_orders', $consultation->radiology_orders ?? '') }}</textarea>
+                    @error('radiology_orders')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+            </div>
+        </div>
+
         <div class="mt-8 pt-6 border-t border-gray-200">
             <h3 class="text-xl font-semibold mb-4 text-gray-800">
                 <i class="fas fa-share-square mr-2"></i> Select Next Patient Destination
@@ -102,11 +134,11 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 
                 @php 
-                    $currentNextStep = old('next_step'); 
+                    $currentNextStep = old('next_step', $consultation->next_step ?? null); 
                 @endphp
 
                 <label class="block cursor-pointer">
-                    <input type="radio" name="next_step" value="Pharmacy" class="sr-only" required @checked($currentNextStep === 'Pharmacy')>
+                    <input type="radio" name="next_step" value="Pharmacy" class="sr-only next-step-radio" required @checked($currentNextStep === 'Pharmacy')>
                     <div class="p-4 border-2 border-gray-300 rounded-lg text-center hover:border-indigo-500 transition duration-150 @if($currentNextStep === 'Pharmacy') bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500 @endif">
                         <i class="fas fa-prescription-bottle-alt text-4xl text-green-600 mb-2"></i>
                         <p class="font-semibold text-gray-800">Pharmacy</p>
@@ -115,7 +147,8 @@
                 </label>
 
                 <label class="block cursor-pointer">
-                    <input type="radio" name="next_step" value="Lab/Rad" class="sr-only" required @checked($currentNextStep === 'Lab/Rad')>
+                    {{-- Added class 'next-step-radio' for easy JS selection --}}
+                    <input type="radio" name="next_step" value="Lab/Rad" id="lab_rad_radio" class="sr-only next-step-radio" required @checked($currentNextStep === 'Lab/Rad')>
                     <div class="p-4 border-2 border-gray-300 rounded-lg text-center hover:border-indigo-500 transition duration-150 @if($currentNextStep === 'Lab/Rad') bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500 @endif">
                         <i class="fas fa-flask text-4xl text-yellow-600 mb-2"></i>
                         <p class="font-semibold text-gray-800">Lab / Radiology</p>
@@ -124,7 +157,7 @@
                 </label>
 
                 <label class="block cursor-pointer">
-                    <input type="radio" name="next_step" value="Inpatient" class="sr-only" required @checked($currentNextStep === 'Inpatient')>
+                    <input type="radio" name="next_step" value="Inpatient" class="sr-only next-step-radio" required @checked($currentNextStep === 'Inpatient')>
                     <div class="p-4 border-2 border-gray-300 rounded-lg text-center hover:border-indigo-500 transition duration-150 @if($currentNextStep === 'Inpatient') bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500 @endif">
                         <i class="fas fa-bed text-4xl text-red-600 mb-2"></i>
                         <p class="font-semibold text-gray-800">Admit Inpatient</p>
@@ -133,7 +166,7 @@
                 </label>
 
                 <label class="block cursor-pointer">
-                    <input type="radio" name="next_step" value="Discharged" class="sr-only" required @checked($currentNextStep === 'Discharged')>
+                    <input type="radio" name="next_step" value="Discharged" class="sr-only next-step-radio" required @checked($currentNextStep === 'Discharged')>
                     <div class="p-4 border-2 border-gray-300 rounded-lg text-center hover:border-indigo-500 transition duration-150 @if($currentNextStep === 'Discharged') bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500 @endif">
                         <i class="fas fa-sign-out-alt text-4xl text-gray-500 mb-2"></i>
                         <p class="font-semibold text-gray-800">Discharge</p>
@@ -152,4 +185,31 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const labRadRadio = document.getElementById('lab_rad_radio');
+        const ordersSection = document.getElementById('lab-rad-orders-section');
+        const nextStepRadios = document.querySelectorAll('.next-step-radio');
+
+        /**
+         * Toggles the visibility of the Lab/Rad Orders section.
+         */
+        function toggleOrdersSection() {
+            if (labRadRadio && labRadRadio.checked) {
+                ordersSection.classList.remove('hidden');
+            } else {
+                ordersSection.classList.add('hidden');
+            }
+        }
+        
+        // Initial check on page load (in case of validation error or existing data)
+        toggleOrdersSection();
+
+        // Add event listener to all radio buttons
+        nextStepRadios.forEach(radio => {
+            radio.addEventListener('change', toggleOrdersSection);
+        });
+    });
+</script>
 @endsection

@@ -6,6 +6,7 @@ use App\Models\Visit;
 use App\Models\LabRequest;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use App\Models\Prescription;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -171,40 +172,72 @@ class DashboardController extends Controller
                     ->paginate(10);
                 break;
 
-                case 'labtech':
-                // WORKFLOW STEP 4: LAB TECHNICIAN'S QUEUE
-                $query = LabRequest::with(['visit.patient', 'doctor']);
+              case 'labtech':
+                                    // WORKFLOW STEP 4: LAB TECHNICIAN'S QUEUE
+                                     // We now query the Visit model and eager load the LabRequests (which contain the doctor info).
+                    $query = Visit::with(['patient', 'labRequests.doctor']);
 
-                // Filter: Show all 'Pending' requests AND any 'In Progress' requests assigned to the current tech.
-                $query->where(function ($q) use ($user) {
-                    $q->where('status', 'Pending')
-                      ->orWhere(function ($q2) use ($user) {
-                          $q2->where('status', 'In Progress')
-                             ->where('lab_tech_id', $user->id);
-                      });
-                });
+                            // CRITICAL FILTER: Only include Visits that are currently 
+                               // in the 'Lab/Rad' status. This is the only mandatory filter.
+                     $query->where('status', 'Lab/Rad'); // Direct filter on the Visit model
 
-                // Apply search filter (by Patient Name or Visit Token)
-                if ($request->filled('search')) {
-                    $search = $request->search;
+                        // NOTE: The LabQueue will now contain Visit objects.
+                        // The Blade view (outpatient.lab.dashboard) must be updated to access
+                        // LabRequests via $visit->labRequests.
+
+                        // Apply search filter (by Patient Name or Visit Token)
+                     if ($request->filled('search')) {
+                  $search = $request->search;
                     $query->where(function ($q) use ($search) {
-                        // Search by patient name via visit
-                        $q->whereHas('visit.patient', function ($p) use ($search) {
-                            $p->where('name', 'like', "%{$search}%");
-                        })
-                        // Search by visit token via visit
-                        ->orWhereHas('visit', function ($v) use ($search) {
-                            $v->where('visit_token', 'like', "%{$search}%");
-                        });
-                    });
-                }
+                           // Search by patient name (direct relationship on Visit)
+                       $q->whereHas('patient', function ($p) use ($search) {
+                        $p->where('name', 'like', "%{$search}%");
+                      })
+                            // Or by visit token (direct column on Visit model)
+                       ->orWhere('visit_token', 'like', "%{$search}%");
+                      });
+                  }
 
-                // Apply sorting: Prioritize Pending requests, then oldest requests first
-                $data['labQueue'] = $query
-                    ->orderByRaw("FIELD(status, 'Pending', 'In Progress', 'Completed')")
-                    ->orderBy('created_at', 'asc')
+                           // Sorting: Show the oldest patients/visits first (using registration_date from Visit)
+                  $data['labQueue'] = $query
+                    ->orderBy('registration_date', 'asc')
                     ->paginate(10);
-                break;
+                 break;
+
+             case 'pharmacist':
+    // WORKFLOW STEP 5: PHARMACIST'S QUEUE
+    // Fetch prescriptions that have been sent from doctors and are pending dispensation.
+
+    $query = Prescription::with(['visit.patient', 'doctor']);
+
+    // Only prescriptions currently awaiting pharmacy action
+    $query->where('status', 'Pending');
+
+    // Optional search by patient name or visit token
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->whereHas('patient', function ($p) use ($search) {
+                $p->where('name', 'like', "%{$search}%");
+            })
+            ->orWhereHas('visit', function ($v) use ($search) {
+                $v->where('visit_token', 'like', "%{$search}%");
+            });
+        });
+    }
+
+    // Optional filter by status (Pending Pharmacy or Dispensed)
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+
+    // Sorting and pagination
+    $data['pharmacyQueue'] = $query
+        ->orderBy('created_at', 'desc')
+        ->paginate(10);
+
+    break;
+
 
 
             default:

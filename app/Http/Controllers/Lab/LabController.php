@@ -9,21 +9,16 @@ use Illuminate\Http\Request;
 
 class LabController extends Controller
 {
-    /**
-     * Display the main lab dashboard showing pending requests.
-     * * NOTE: This method is primarily used to return the specific lab queue view. 
-     * The general dashboard statistics are handled by DashboardController.
-     */
-    public function dashboard()
-{
-    // Fetch all visits sent to the lab/radiology
-    $pendingRequests = Visit::with(['patient', 'consultation.doctor'])
-        ->where('status', 'Lab/Rad')
-        ->orderBy('created_at', 'asc')
-        ->get();
-
-    return view('outpatient.lab.dashboard', compact('pendingRequests'));
-}
+    // The previous 'dashboard' method has been removed. 
+    // The lab technician's main view (the queue) is now handled by 
+    // the DashboardController@index method when the user's role is 'labtech'.
+    // 
+    // **ACTION REQUIRED (Outside this file):**
+    // Update the route that currently points to this controller's dashboard 
+    // method (e.g., '/lab/dashboard') to redirect or route directly to:
+    // route('outpatient.dashboard')
+    // Laravel will automatically detect the user's 'labtech' role and 
+    // load the correct queue view from the main DashboardController.
 
     /**
      * Form to view and enter results for a specific LabRequest.
@@ -31,6 +26,7 @@ class LabController extends Controller
     public function processRequest(LabRequest $labRequest)
     {
         // Placeholder for the form to enter results
+        // Ensure this view uses $labRequest, which is correctly passed here.
         return view('outpatient.lab.process', compact('labRequest'));
     }
 
@@ -53,9 +49,52 @@ class LabController extends Controller
         // Critically, we now update the Visit status to indicate results are ready for doctor review
         $labRequest->visit->update(['status' => 'Lab/Rad Results Ready']);
 
-        // --- UPDATED REDIRECTION ---
-        // Redirect the lab technician back to the main outpatient dashboard queue view for their role.
+        // This redirection is correct and points to the unified dashboard controller.
         return redirect()->route('outpatient.dashboard', ['role' => 'labtech']) 
                          ->with('success', 'Lab results recorded successfully. Patient moved to review queue.');
     }
+
+    public function labQueue(Request $request)
+{
+    $labtechId = auth()->id(); // current logged-in lab tech
+
+    // Filters (optional)
+    $search = $request->input('search');
+    $statusFilter = $request->input('status');
+
+    // Base query: only requests handled by this labtech
+    $query = LabRequest::with(['visit.patient', 'doctor'])
+        ->where('lab_tech_id', $labtechId)
+        ->where(function ($q) {
+            $q->where('status', 'Completed')
+              ->orWhereNotNull('results');
+        })
+        ->orderBy('updated_at', 'desc');
+
+    // Optional search (by patient name or visit token)
+    if (!empty($search)) {
+        $query->whereHas('visit.patient', function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%");
+        })->orWhereHas('visit', function ($q) use ($search) {
+            $q->where('visit_token', 'like', "%{$search}%");
+        });
+    }
+
+    // Optional filter by status (Completed / Pending Verification)
+    if (!empty($statusFilter)) {
+        $query->where('status', $statusFilter);
+    }
+
+    // Pagination
+    $labResults = $query->paginate(10);
+
+    return view('outpatient.lab.results', [
+        'labResults' => $labResults,
+        'filters' => [
+            'search' => $search,
+            'status' => $statusFilter,
+        ],
+    ]);
+}
+
 }
