@@ -93,10 +93,33 @@
                 @error('treatment_plan')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
+        
+        <hr class="my-8">
 
-        {{-- NEW: Lab and Radiology Orders Section --}}
-        {{-- This section is hidden by default and toggled by JavaScript --}}
-        <div id="lab-rad-orders-section" class="mt-8 pt-6 border-t border-gray-200 @if(old('next_step') !== 'Lab/Rad' && empty($consultation->lab_orders) && empty($consultation->radiology_orders)) hidden @endif">
+        {{-- NEW: Prescription Section (Visible when 'Pharmacy' is selected) --}}
+        <div id="pharmacy-prescription-section" class="mt-8 pt-6 border-t border-gray-200 
+            @if(old('next_step') !== 'Pharmacy' && empty($consultation->prescription)) hidden @endif">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">
+                <i class="fas fa-file-prescription mr-2 text-green-600"></i> **Prescription Details**
+            </h3>
+
+            <div>
+                <label for="prescription" class="block text-sm font-medium text-gray-700 mb-1">
+                    <i class="fas fa-prescription-bottle-alt mr-1 text-green-600"></i> Final Prescription
+                </label>
+                {{-- Note: Assuming $consultation can hold a prescription field --}}
+                <textarea name="prescription" id="prescription" rows="5"
+                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-green-500 focus:border-green-500"
+                    placeholder="e.g., Amoxicillin 500mg - 1 capsule twice a day for 7 days. Paracetamol 500mg - as needed for pain/fever.">{{ old('prescription', $consultation->prescription ?? '') }}</textarea>
+                @error('prescription')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+        </div>
+        {{-- END NEW: Prescription Section --}}
+
+
+        {{-- Lab and Radiology Orders Section (Visibility controlled by JS) --}}
+        <div id="lab-rad-orders-section" class="mt-8 pt-6 border-t border-gray-200 
+            @if(old('next_step') !== 'Lab/Rad' && empty($consultation->lab_orders) && empty($consultation->radiology_orders)) hidden @endif">
             <h3 class="text-xl font-semibold mb-4 text-gray-800">
                 <i class="fas fa-vials mr-2 text-yellow-600"></i> **Lab & Radiology Orders**
             </h3>
@@ -125,6 +148,7 @@
                 </div>
             </div>
         </div>
+        {{-- END Lab and Radiology Orders Section --}}
 
         <div class="mt-8 pt-6 border-t border-gray-200">
             <h3 class="text-xl font-semibold mb-4 text-gray-800">
@@ -138,7 +162,8 @@
                 @endphp
 
                 <label class="block cursor-pointer">
-                    <input type="radio" name="next_step" value="Pharmacy" class="sr-only next-step-radio" required @checked($currentNextStep === 'Pharmacy')>
+                    {{-- ADDED ID for JS check --}}
+                    <input type="radio" name="next_step" value="Pharmacy" id="pharmacy_radio" class="sr-only next-step-radio" required @checked($currentNextStep === 'Pharmacy')>
                     <div class="p-4 border-2 border-gray-300 rounded-lg text-center hover:border-indigo-500 transition duration-150 @if($currentNextStep === 'Pharmacy') bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500 @endif">
                         <i class="fas fa-prescription-bottle-alt text-4xl text-green-600 mb-2"></i>
                         <p class="font-semibold text-gray-800">Pharmacy</p>
@@ -147,7 +172,7 @@
                 </label>
 
                 <label class="block cursor-pointer">
-                    {{-- Added class 'next-step-radio' for easy JS selection --}}
+                    {{-- Retained class 'next-step-radio' for easy JS selection --}}
                     <input type="radio" name="next_step" value="Lab/Rad" id="lab_rad_radio" class="sr-only next-step-radio" required @checked($currentNextStep === 'Lab/Rad')>
                     <div class="p-4 border-2 border-gray-300 rounded-lg text-center hover:border-indigo-500 transition duration-150 @if($currentNextStep === 'Lab/Rad') bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500 @endif">
                         <i class="fas fa-flask text-4xl text-yellow-600 mb-2"></i>
@@ -186,29 +211,42 @@
     </form>
 </div>
 
+## Updated JavaScript
+
+The JavaScript now checks which radio button is selected and shows **only the relevant section** (Prescription for Pharmacy, or Lab/Rad Orders for Lab/Rad).
+
+```html
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const pharmacyRadio = document.getElementById('pharmacy_radio');
         const labRadRadio = document.getElementById('lab_rad_radio');
+        const pharmacySection = document.getElementById('pharmacy-prescription-section');
         const ordersSection = document.getElementById('lab-rad-orders-section');
         const nextStepRadios = document.querySelectorAll('.next-step-radio');
 
         /**
-         * Toggles the visibility of the Lab/Rad Orders section.
+         * Toggles the visibility of the input sections based on the selected next step.
          */
-        function toggleOrdersSection() {
-            if (labRadRadio && labRadRadio.checked) {
+        function toggleInputSections() {
+            // Hide all specialized sections initially
+            pharmacySection.classList.add('hidden');
+            ordersSection.classList.add('hidden');
+            
+            if (pharmacyRadio && pharmacyRadio.checked) {
+                // If Pharmacy is checked, show Prescription section
+                pharmacySection.classList.remove('hidden');
+            } else if (labRadRadio && labRadRadio.checked) {
+                // If Lab/Rad is checked, show Lab/Rad Orders section
                 ordersSection.classList.remove('hidden');
-            } else {
-                ordersSection.classList.add('hidden');
             }
         }
         
-        // Initial check on page load (in case of validation error or existing data)
-        toggleOrdersSection();
+        // Initial check on page load
+        toggleInputSections();
 
         // Add event listener to all radio buttons
         nextStepRadios.forEach(radio => {
-            radio.addEventListener('change', toggleOrdersSection);
+            radio.addEventListener('change', toggleInputSections);
         });
     });
 </script>

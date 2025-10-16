@@ -53,13 +53,18 @@ class ConsultationController extends Controller
     {
         // Define all valid next statuses after consultation
         $validNextSteps = ['Pharmacy', 'Lab/Rad', 'Inpatient', 'Discharged'];
-        $isLabRad = $request->input('next_step') === 'Lab/Rad';
+        $nextStep = $request->input('next_step');
+        $isLabRad = $nextStep === 'Lab/Rad';
+        $isPharmacy = $nextStep === 'Pharmacy'; // NEW: Flag for Pharmacy
 
         $request->validate([
             'diagnosis' => 'required|string|max:500',
             'notes' => 'nullable|string',
             'treatment_plan' => 'nullable|string',
             
+            // NEW: Prescription Validation: Require if Pharmacy is selected
+            'prescription' => ['nullable', 'string', Rule::requiredIf($isPharmacy)],
+
             // Lab/Rad Orders Validation: Require at least one order if Lab/Rad is selected.
             'lab_orders' => ['nullable', 'string', Rule::requiredIf($isLabRad && !$request->filled('radiology_orders'))],
             'radiology_orders' => ['nullable', 'string', Rule::requiredIf($isLabRad && !$request->filled('lab_orders'))],
@@ -68,7 +73,7 @@ class ConsultationController extends Controller
             'next_step' => ['required', 'string', Rule::in($validNextSteps)], 
         ]);
 
-        // 1. Update/Create the Consultation record (save the raw order text for consultation history)
+        // 1. Update/Create the Consultation record (save the raw order/prescription text for history)
         $consultation = Consultation::updateOrCreate(
             ['visit_id' => $visit->id],
             [
@@ -77,15 +82,32 @@ class ConsultationController extends Controller
                 'notes' => $request->input('notes'),
                 'treatment_plan' => $request->input('treatment_plan'),
                 'lab_orders' => $request->input('lab_orders'), 
-                'radiology_orders' => $request->input('radiology_orders'), 
+                'radiology_orders' => $request->input('radiology_orders'),
+                'prescription' => $request->input('prescription'), // NEW: Save prescription text to consultation record
                 'status' => 'Completed', // The consultation record itself is completed
             ]
         );
         
-        // 2. Handle LabRequest creation if sending to Lab/Rad
-        $nextStatus = $request->input('next_step');
+        // 2. Handle LabRequest/Prescription creation based on next step
 
-        if ($nextStatus === 'Lab/Rad') {
+        // Handle Prescription creation if sending to Pharmacy
+        if ($nextStep === 'Pharmacy') {
+            $prescriptionData = trim($request->input('prescription') ?? '');
+            
+            if (!empty($prescriptionData)) {
+                // Create a new Prescription record
+                Prescription::create([
+                    'visit_id' => $visit->id,
+                    'doctor_id' => auth()->id(),
+                    'patient_id' => $visit->patient->id, // Use patient ID from the visit relationship
+                    'prescription_details' => $prescriptionData,
+                    'status' => 'Pending', // Initial status for the pharmacy department
+                ]);
+            }
+        }
+
+        // Handle LabRequest creation if sending to Lab/Rad
+        if ($nextStep === 'Lab/Rad') {
             $labOrders = trim($request->input('lab_orders') ?? '');
             $radOrders = trim($request->input('radiology_orders') ?? '');
 
@@ -112,19 +134,19 @@ class ConsultationController extends Controller
         }
 
         // 3. Update visit status based on the doctor's decision (next_step)
-        if ($nextStatus === 'Discharged') {
+        if ($nextStep === 'Discharged') {
             // 'Discharged' could map to 'Completed' in your main Visit status flow
             $visit->update(['status' => 'Completed']); 
             $message = 'Consultation completed. Patient discharged.';
         } else {
             // For Lab/Rad, Pharmacy, Inpatient: set the specific status
-            $visit->update(['status' => $nextStatus]);
-            $message = "Consultation recorded successfully and patient sent to **{$nextStatus}**.";
+            $visit->update(['status' => $nextStep]);
+            $message = "Consultation recorded successfully and patient sent to **{$nextStep}**.";
         }
 
         // Redirect the doctor back to their main queue/dashboard
         return redirect()->route('outpatient.dashboard', ['role' => 'doctor'])
-                         ->with('success', $message);
+                             ->with('success', $message);
     }
 
     /**
@@ -146,56 +168,62 @@ class ConsultationController extends Controller
         // Assuming a view named 'outpatient.consultation.view' exists
         return view('outpatient.consultation.view', compact('visit'));
     }
+    
+    // Existing methods follow...
+
     public function laboratoryQueue()
-{
-    // Fetch visits that have been sent to Lab/Rad
-    $visits = Visit::with(['patient', 'labRequests.doctor'])
-        ->where('status', 'Lab/Rad Results Ready')
-        ->latest()
-        ->get();
+    {
+        // Fetch visits that have been sent to Lab/Rad
+        $visits = Visit::with(['patient', 'labRequests.doctor'])
+            ->where('status', 'Lab/Rad Results Ready')
+            ->latest()
+            ->get();
 
-    return view('outpatient.consultation.laboratory_queue', compact('visits'));
-}
-public function reviewResults($visit_token)
-{
-    // Load visit + related lab results
-    $visit = Visit::with(['patient', 'labRequests'])->where('visit_token', $visit_token)->firstOrFail();
+        return view('outpatient.consultation.laboratory_queue', compact('visits'));
+    }
+    
+    public function reviewResults($visit_token)
+    {
+        // Load visit + related lab results
+        $visit = Visit::with(['patient', 'labRequests'])->where('visit_token', $visit_token)->firstOrFail();
 
-    return view('outpatient.consultation.review_results', compact('visit'));
-}
+        return view('outpatient.consultation.review_results', compact('visit'));
+    }
 
-public function storePrescription(Request $request, $visit_token)
-{
-    $visit = Visit::where('visit_token', $visit_token)->firstOrFail();
+    public function storePrescription(Request $request, $visit_token)
+    {
+        // NOTE: This method is now redundant if the Prescription is stored in storeOrUpdate, 
+        // but it is retained here as it was in the original file.
+        $visit = Visit::where('visit_token', $visit_token)->firstOrFail();
 
-    $request->validate([
-        'prescription_data' => 'required|string',
+        $request->validate([
+            'prescription_data' => 'required|string',
+        ]);
+
+        // Store prescription (linked to visit + doctor)
+        Prescription::create([
+        'visit_id' => $visit->id,
+        'doctor_id' => auth()->id(),
+        'patient_id' => $visit->patient_id,
+        'prescription_details' => $request->input('prescription_data'),
+        'status' => 'Pending',
     ]);
 
-    // Store prescription (linked to visit + doctor)
-    Prescription::create([
-    'visit_id' => $visit->id,
-    'doctor_id' => auth()->id(),
-    'patient_id' => $visit->patient_id,
-    'prescription_details' => $request->input('prescription_data'),
-    'status' => 'Pending',
-]);
+        // Move the visit to the Pharmacy Queue
+        $visit->update(['status' => 'Pharmacy']);
 
-    // Move the visit to the Pharmacy Queue
-    $visit->update(['status' => 'Pharmacy']);
+        return redirect()->route('outpatient.dashboard', ['role' => 'doctor'])
+                            ->with('success', 'Prescription added successfully. Patient moved to Pharmacy Queue.');
+    }
+    
+    public function prescriptionHistory()
+    {
+        // Only show prescriptions created by the logged-in doctor
+        $prescriptions = Prescription::with(['patient', 'visit'])
+            ->where('doctor_id', auth()->id())
+            ->latest()
+            ->get();
 
-    return redirect()->route('outpatient.dashboard', ['role' => 'doctor'])
-                     ->with('success', 'Prescription added successfully. Patient moved to Pharmacy Queue.');
-}
-public function prescriptionHistory()
-{
-    // Only show prescriptions created by the logged-in doctor
-    $prescriptions = Prescription::with(['patient', 'visit'])
-        ->where('doctor_id', auth()->id())
-        ->latest()
-        ->get();
-
-    return view('outpatient.consultation.prescription', compact('prescriptions'));
-}
-
+        return view('outpatient.consultation.prescription', compact('prescriptions'));
+    }
 }

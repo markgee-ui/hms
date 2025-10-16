@@ -238,6 +238,26 @@ class DashboardController extends Controller
 
     break;
 
+            case 'cashier':
+                // WORKFLOW STEP 6: BILLING QUEUE
+                $query = Visit::with('patient')
+                    ->where('status', 'Billing'); // Only visits in Billing status
+
+                // Apply search filter (by Patient Name or Visit Token)
+                if ($request->filled('search')) {
+                    $search = $request->search;
+                    $query->where(function ($q) use ($search) {
+                        $q->whereHas('patient', function ($p) use ($search) {
+                            $p->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhere('visit_token', 'like', "%{$search}%");
+                    });
+                }
+
+                // Paginate after filters
+                $data['billingQueue'] = $query->orderBy('updated_at', 'asc')->paginate(10);
+                break;
+
 
 
             default:

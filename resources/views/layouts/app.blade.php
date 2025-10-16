@@ -61,7 +61,13 @@
                 <i class="fas fa-flask text-lg"></i>
                 <span>Results</span>
                 </a>
-                @endif  
+                @endif 
+                @if(Auth::check() && Auth::user()->role === 'pharmacist')
+                <a href="{{ route('pharmacy.history') }}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-700 transition duration-150 @if(request()->is('pharmacy/history')) bg-gray-700 @endif">
+                <i class="fas fa-history text-lg"></i> {{-- Changed icon to history --}}
+                <span>Prescription History</span> {{-- Changed link text --}}
+               </a>
+                @endif
                 <a href="#" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-700 transition duration-150">
                     <i class="fas fa-cog text-lg"></i>
                     <span>Settings</span>
