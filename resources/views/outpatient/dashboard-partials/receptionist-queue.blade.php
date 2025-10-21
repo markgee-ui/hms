@@ -81,10 +81,10 @@
                             </a>
 
                             <!-- Edit -->
-                            <a href="{{ route('patient.edit', $visit->patient->id) }}" 
+                            <!-- <a href="{{ route('patient.edit', $visit->patient->id) }}" 
                                class="inline-flex items-center px-3 py-1.5 bg-purple-500 text-white text-xs font-semibold rounded-lg hover:bg-purple-600 transition">
                                 <i class="fas fa-edit mr-1"></i> Edit
-                            </a>
+                            </a> -->
 
                             <!-- Conditional Buttons -->
                             @if ($visit->status == 'Registered')

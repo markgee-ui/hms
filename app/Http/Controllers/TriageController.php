@@ -9,6 +9,8 @@ use App\Notifications\NewTriagePatientNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewConsultationPatientNotification;
 
 class TriageController extends Controller
 {
@@ -108,6 +110,11 @@ class TriageController extends Controller
 
             // 2. Update Visit Status to ready for Consultation
             $visit->update(['status' => 'Triage Completed']); // Changed to 'Triage Completed' for clarity
+
+            // 3. Notify all doctors about the new patient ready for consultation
+                    // 3. Notify all doctors
+            $doctors = User::where('role', 'doctor')->get();
+            Notification::send($doctors, new NewConsultationPatientNotification($visit));
 
             DB::commit();
 

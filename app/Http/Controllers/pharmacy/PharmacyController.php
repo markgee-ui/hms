@@ -7,7 +7,9 @@ use App\Models\Prescription;
 use App\Models\Drug;
 use App\Models\Dispense;
 use Illuminate\Http\Request;
-
+use App\Models\User;
+use App\Notifications\NewBillingPatientNotification; 
+use Illuminate\Support\Facades\Notification;
 class PharmacyController extends Controller
 {
     // The pharmacist’s main view (queue) is handled here.
@@ -121,6 +123,17 @@ class PharmacyController extends Controller
 
         // Optionally update the visit to "Medication Dispensed"
         $prescription->visit->update(['status' => 'Billing']);
+
+         // 1. Identify all Cashier users who should be notified
+        $notifiableUsers = User::where('role', 'cashier')->get();
+
+        if ($notifiableUsers->isNotEmpty()) {
+            // 2. Send the notification to the collection of cashiers
+            Notification::send(
+                $notifiableUsers, 
+                new NewBillingPatientNotification($prescription->visit)
+            );
+        }
 
         return redirect()->route('outpatient.dashboard', ['role' => 'pharmacist'])
                             ->with('success', 'Medication dispensed successfully. Patient sent to Billing queue.');

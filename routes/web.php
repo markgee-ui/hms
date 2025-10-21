@@ -46,8 +46,9 @@ Route::group(['middleware' => 'auth'], function () {
     // DASHBOARD
     Route::get('/dashboard/outpatient', [DashboardController::class, 'index'])->name('outpatient.dashboard');
     Route::get('/search', [SearchController::class, 'index'])->name('search.index');
-    Route::get('/notifications/fetch', [DashboardController::class, 'fetchNotifications']) ->name('notifications.fetch');
+    Route::get('/notifications/fetch', [NotificationController::class, 'fetch'])->name('notifications.fetch');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
 
 
     

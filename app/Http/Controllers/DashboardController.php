@@ -39,7 +39,7 @@ class DashboardController extends Controller
             'Registered' => $rawCounts['Registered'] ?? 0,
             
             // Triage Queue: Patients waiting for or currently in Triage
-            'Triage' => ($rawCounts['Waiting for Triage'] ?? 0) + ($rawCounts['In Triage'] ?? 0),
+            'Waiting for Triage' => ($rawCounts['Waiting for Triage'] ?? 0) + ($rawCounts['In Triage'] ?? 0),
 
             // Consultation Queue: Patients waiting for the Doctor ('Triage Completed') or actively being seen ('In Consultation')
             'Consultation' => ($rawCounts['Triage Completed'] ?? 0) + ($rawCounts['In Consultation'] ?? 0),
@@ -273,38 +273,5 @@ class DashboardController extends Controller
          */
         return view('outpatient.dashboard', compact('data', 'role'));
     }
-
-    /**
-     * -------------------------------------------------------------
-     * Fetch Notifications for Current User (AJAX)
-     * -------------------------------------------------------------
-     */
-   public function fetchNotifications()
-{
-    $user = Auth::user();
-
-    $notifications = $user->notifications()->latest()->take(10)->get();
-
-    $unreadCount = $user->unreadNotifications()->count();
-
-    // Transform data to make it consistent with your UI
-    $formatted = $notifications->map(function ($notification) {
-        $data = $notification->data;
-        return [
-            'id' => $notification->id,
-            'title' => $data['title'] ?? 'Notification',
-            'message' => $data['message'] ?? '',
-            'icon' => $data['icon'] ?? 'info',
-            'link' => $data['link'] ?? '#',
-            'is_read' => $notification->read_at ? true : false,
-            'created_at' => $notification->created_at->diffForHumans(),
-        ];
-    });
-
-    return response()->json([
-        'notifications' => $formatted,
-        'unreadCount' => $unreadCount,
-    ]);
-}
 
 }

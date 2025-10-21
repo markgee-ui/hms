@@ -9,6 +9,10 @@ use App\Models\LabRequest;
 use App\Models\Prescription; 
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Notification;
+use App\Models\User; 
+use App\Notifications\NewLabOrderNotification; 
+use App\Notifications\NewPrescriptionNotification;
 
 class ConsultationController extends Controller
 {
@@ -143,7 +147,22 @@ class ConsultationController extends Controller
             $visit->update(['status' => $nextStep]);
             $message = "Consultation recorded successfully and patient sent to **{$nextStep}**.";
         }
-
+          // NOTIFICATION LOGIC
+            if ($nextStep === 'Lab/Rad') {
+                $notifiableUsers = User::where('role', 'labtech')->get();
+                // Check if any requests were actually created before notifying
+                if ($notifiableUsers->isNotEmpty() && (isset($testsRequested) && (!empty($labOrders) || !empty($radOrders)))) {
+                    Notification::send($notifiableUsers, new NewLabOrderNotification($visit));
+                }
+            } 
+            
+            if ($nextStep === 'Pharmacy') {
+                $notifiableUsers = User::where('role', 'pharmacist')->get();
+                 // Check if a prescription was actually created before notifying
+                if ($notifiableUsers->isNotEmpty() && (isset($prescriptionData) && !empty($prescriptionData))) {
+                    Notification::send($notifiableUsers, new NewPrescriptionNotification($visit));
+                }
+            }
         // Redirect the doctor back to their main queue/dashboard
         return redirect()->route('outpatient.dashboard', ['role' => 'doctor'])
                              ->with('success', $message);

@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Visit;
 use App\Models\LabRequest;
 use Illuminate\Http\Request;
+use App\Models\User; 
+use App\Notifications\LabResultsReadyNotification;
+use Illuminate\Support\Facades\Notification;
 
 class LabController extends Controller
 {
@@ -48,6 +51,16 @@ class LabController extends Controller
         
         // Critically, we now update the Visit status to indicate results are ready for doctor review
         $labRequest->visit->update(['status' => 'Lab/Rad Results Ready']);
+
+        //notification logic
+        $orderingDoctor = $labRequest->doctor;
+         if ($orderingDoctor) {
+            // 2. Send the notification to the specific doctor
+            Notification::send(
+                $orderingDoctor, 
+                new LabResultsReadyNotification($labRequest->visit)
+            );
+        }
 
         // This redirection is correct and points to the unified dashboard controller.
         return redirect()->route('outpatient.dashboard', ['role' => 'labtech']) 
