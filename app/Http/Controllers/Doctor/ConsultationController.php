@@ -196,7 +196,7 @@ class ConsultationController extends Controller
         $visits = Visit::with(['patient', 'labRequests.doctor'])
             ->where('status', 'Lab/Rad Results Ready')
             ->latest()
-            ->get();
+            ->paginate(10);
 
         return view('outpatient.consultation.laboratory_queue', compact('visits'));
     }
@@ -235,14 +235,15 @@ class ConsultationController extends Controller
                             ->with('success', 'Prescription added successfully. Patient moved to Pharmacy Queue.');
     }
     
-    public function prescriptionHistory()
-    {
-        // Only show prescriptions created by the logged-in doctor
-        $prescriptions = Prescription::with(['patient', 'visit'])
-            ->where('doctor_id', auth()->id())
-            ->latest()
-            ->get();
+  public function prescriptionHistory()
+{
+    // Only show prescriptions created by the logged-in doctor
+    $prescriptions = Prescription::with(['patient', 'visit'])
+        ->where('doctor_id', auth()->id())
+        ->latest()
+        ->paginate(10); 
 
-        return view('outpatient.consultation.prescription', compact('prescriptions'));
-    }
+    return view('outpatient.consultation.prescription', compact('prescriptions'));
+}
+
 }
