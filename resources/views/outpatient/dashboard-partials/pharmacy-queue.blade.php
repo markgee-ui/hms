@@ -7,12 +7,10 @@
         in the <strong>Pharmacy</strong>. You can search, filter, and manage each request below.
     </p>
 
-    <!-- Search & Filter Form -->
     <form method="GET" action="{{ route('outpatient.dashboard') }}"
           class="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
         <input type="hidden" name="role" value="pharmacist">
 
-        <!-- Search -->
         <div class="relative flex-grow w-full md:w-1/3">
             <input 
                 type="text"
@@ -25,18 +23,16 @@
             <i class="fas fa-search absolute left-3 top-4 text-gray-400"></i>
         </div>
 
-        <!-- Filters -->
         <div class="flex items-center gap-3 w-full md:w-auto">
-            <!-- Status Filter -->
+            {{-- NOTE: Adjusted options for clearer status values ('Pending' is used as the non-dispensed status) --}}
             <select name="status" onchange="this.form.submit()" 
                 class="py-3 px-4 border border-gray-300 rounded-lg shadow-sm 
-                       focus:ring-blue-500 focus:border-blue-500">
+                        focus:ring-blue-500 focus:border-blue-500">
                 <option value="">All Prescriptions</option>
-                <option value="Pending Pharmacy" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending Pharmacy</option>
+                <option value="Pending" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending</option>
                 <option value="Dispensed" {{ request('status') == 'Dispensed' ? 'selected' : '' }}>Dispensed</option>
             </select>
 
-            <!-- Clear / Filter Buttons -->
             @if(request()->filled('search') || request()->filled('status'))
                 <a href="{{ route('outpatient.dashboard', ['role' => 'pharmacist']) }}"
                    class="py-3 px-4 bg-gray-200 text-gray-700 rounded-lg shadow-sm hover:bg-gray-300 flex items-center justify-center">
@@ -49,19 +45,17 @@
                 </button>
             @endif
 
-            <!-- Refresh -->
             <a href="{{ route('outpatient.dashboard', [
                     'role' => 'pharmacist',
                     'search' => request('search'),
                     'status' => request('status')
                 ]) }}" 
-               class="py-3 px-4 bg-purple-600 text-white rounded-lg shadow-sm hover:bg-purple-700 transition transform hover:scale-[1.05] flex items-center justify-center">
+                class="py-3 px-4 bg-purple-600 text-white rounded-lg shadow-sm hover:bg-purple-700 transition transform hover:scale-[1.05] flex items-center justify-center">
                 <i class="fas fa-sync-alt mr-2"></i> Refresh
             </a>
         </div>
     </form>
 
-    <!-- Pharmacy Queue Table -->
     <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-300">
         @if($data['pharmacyQueue']->isEmpty())
             <div class="p-8 text-center text-gray-500 border-t border-gray-300">
@@ -103,7 +97,7 @@
                                     <div class="font-semibold text-gray-900 text-xs sm:text-sm">
                                       {{ $prescription->prescription_details ?? 'No details provided' }}
                                         <span class="text-xs text-gray-500 block sm:inline">
-                                            (Dr. {{ $prescription->doctor->name ?? 'Unassigned' }})
+                                            ({{ $prescription->doctor->name ?? 'Unassigned' }})
                                         </span>
                                     </div>
                                 </td>
@@ -114,10 +108,11 @@
 
                                 <td class="px-6 py-4 text-right">
                                     @if($prescription->status == 'Pending')
-                                        <a href="{{ route('pharmacy.process', $prescription->id) }}"
+                                        {{-- Updated action to point to a new detailed view route --}}
+                                        <a href="{{ route('pharmacy.view', $prescription->id) }}"
                                             class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm 
-                                                   text-white bg-green-600 hover:bg-green-700 transition">
-                                            Dispense
+                                                    text-white bg-blue-600 hover:bg-blue-700 transition transform hover:scale-[1.05]">
+                                            <i class="fas fa-eye mr-2"></i> View & Process
                                         </a>
                                     @else
                                         <span class="text-xs text-green-600 font-semibold border border-green-400 px-3 py-1 rounded-full">
@@ -130,7 +125,6 @@
                     </tbody>
                 </table>
 
-                <!-- Pagination -->
                 @if ($data['pharmacyQueue']->lastPage() > 1)
                     <div class="p-4 flex justify-center border-t border-gray-300 bg-gray-50">
                         {{ $data['pharmacyQueue']->appends(request()->except('page'))->links() }}

@@ -49,7 +49,9 @@
             @include('outpatient.dashboard-partials.lab-queue', ['queue' => $data['labQueue']])
         @elseif ($role == 'pharmacist')
             @include('outpatient.dashboard-partials.pharmacy-queue', ['queue' => $data['pharmacyQueue']])
-        {{-- Add sections for cashier, pharmacist, etc. --}}
+
+        @elseif ($role == 'cashier')
+            @include('outpatient.dashboard-partials.billing-queue', ['billingQueue' => $data['billingQueue']])  
         @else 
             <p class="text-gray-600">No immediate tasks. View the flow status above for system overview.</p>
         @endif

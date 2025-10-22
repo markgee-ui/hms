@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Notifications\NewTriagePatientNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Models\Patient;
 use App\Models\Visit;
 use Illuminate\Http\Request;
@@ -76,6 +79,12 @@ class PatientController extends Controller
             ]);
 
             DB::commit();
+
+            // Identify all users who should be notified: Receptionist and Triage Nurses
+            $notifiableUsers = User::whereIn('role', ['receptionist', 'nurse'])->get();
+            
+            // Send the notification to the collection of users
+            Notification::send($notifiableUsers, new NewTriagePatientNotification($visit));
             
             // CORRECTED REDIRECTION to the defined dashboard route
             return redirect()->route('outpatient.dashboard')->with('success', 

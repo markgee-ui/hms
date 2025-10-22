@@ -46,6 +46,10 @@
                     </tbody>
                 </table>
             </div>
+             <!-- Pagination Links -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                {{ $visits->links('pagination::tailwind') }}
+            </div>
         @endif
     </div>
 </div>

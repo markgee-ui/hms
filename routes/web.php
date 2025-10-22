@@ -9,6 +9,7 @@ use App\Http\Controllers\TriageController;
 use App\Http\Controllers\Doctor\ConsultationController;
 use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\pharmacy\PharmacyController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\NotificationController;
 
 
@@ -45,8 +46,9 @@ Route::group(['middleware' => 'auth'], function () {
     // DASHBOARD
     Route::get('/dashboard/outpatient', [DashboardController::class, 'index'])->name('outpatient.dashboard');
     Route::get('/search', [SearchController::class, 'index'])->name('search.index');
-    Route::get('/notifications/fetch', [DashboardController::class, 'fetchNotifications']) ->name('notifications.fetch');
+    Route::get('/notifications/fetch', [NotificationController::class, 'fetch'])->name('notifications.fetch');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
 
 
     
@@ -103,7 +105,16 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::prefix('pharmacy')->name('pharmacy.')->group(function () {
         Route::get('/pharmacy/dispense/{id}', [PharmacyController::class, 'process'])->name('process');
+        Route::get('/history', [PharmacyController::class, 'dispensedHistory'])->name('history');
+        Route::get('/pharmacy/prescriptions/{id}/view', [PharmacyController::class, 'viewPrescription'])->name('view');
+        Route::post('/pharmacy/prescriptions/{prescription}/dispense', [PharmacyController::class, 'storeDispense'])->name('dispense'); // Existing route, just for clarity
     });
         // WORKFLOW STEP 6: BILLING (Billing Role)
+
+    Route::prefix('billing')->name('billing.')->group(function () {
+    Route::get('/queue', [BillingController::class, 'billingQueue'])->name('queue');
+    Route::get('/{visit}/process', [BillingController::class, 'processBilling'])->name('process');
+    Route::post('/{visit}/finalize', [BillingController::class, 'finalizePayment'])->name('finalize');
+});
     // ... other future workflow steps (Lab, Pharmacy, Billing) will follow here ...
 });

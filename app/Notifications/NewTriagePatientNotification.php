@@ -7,8 +7,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
+// i will remove the shouldqueue interface in production if not needed
+
 class NewTriagePatientNotification extends Notification implements ShouldQueue
-{
+{ //when a channel needs to make an external api call to deliver the notificastion
+    //to speed up apk rt,i use shouldqueue interface and queueable trait.
     use Queueable;
 
     protected $visit;
@@ -49,8 +52,8 @@ class NewTriagePatientNotification extends Notification implements ShouldQueue
         return [
             'title' => 'New Patient in Triage Queue',
             'message' => "Patient **{$patientName}** (Token: {$visitToken}) has been added to the Triage queue.",
-            'icon' => 'user-plus', // Example icon for your UI
-            'link' => route('outpatient.dashboard', ['status' => 'Waiting for Triage']),
+            'icon' => 'user-plus', 
+            'link' => route('outpatient.dashboard', ['status' => 'Registered']),
             'patient_id' => $this->visit->patient_id,
             'visit_token' => $visitToken,
         ];

@@ -61,7 +61,13 @@
                 <i class="fas fa-flask text-lg"></i>
                 <span>Results</span>
                 </a>
-                @endif  
+                @endif 
+                @if(Auth::check() && Auth::user()->role === 'pharmacist')
+                <a href="{{ route('pharmacy.history') }}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-700 transition duration-150 @if(request()->is('pharmacy/history')) bg-gray-700 @endif">
+                <i class="fas fa-history text-lg"></i> {{-- Changed icon to history --}}
+                <span>Prescription History</span> {{-- Changed link text --}}
+               </a>
+                @endif
                 <a href="#" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-700 transition duration-150">
                     <i class="fas fa-cog text-lg"></i>
                     <span>Settings</span>
@@ -329,7 +335,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Fetch notifications dynamically
     async function loadNotifications() {
         try {
-            // FIX: Ensure the API key is being sent if required, and explicitly handle network/JSON errors
             const res = await fetch('{{ route("notifications.fetch") }}');
             
             if (!res.ok) {
@@ -343,11 +348,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 notifList.innerHTML = '<li class="p-3 text-gray-500 text-center">No new notifications</li>';
             } else {
                 data.notifications.forEach(n => {
-                    // FIX: Ensure 'is_read' check is used to change background color
                     const bgColor = n.is_read ? 'hover:bg-gray-100' : 'bg-blue-50 hover:bg-blue-100';
                     const fontColor = n.is_read ? 'text-gray-600' : 'text-gray-800 font-semibold';
-                    
-                    // FIX: Added <a> tag for navigation
                     const link = n.link || '#';
                     
                     notifList.innerHTML += `
@@ -398,21 +400,31 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Clear all (mark as read)
-    clearNotif.addEventListener('click', async () => {
-        try {
-            const res = await fetch('{{ route("notifications.fetch") }}?mark_read=1');
-            if (res.ok) {
-                // If successful, update the UI without reloading
-                notifList.innerHTML = '<li class="p-3 text-gray-500 text-center">No new notifications</li>';
-                notifCount.classList.add('hidden');
-            } else {
-                 console.error('Failed to mark notifications as read:', res.status);
+// Clear all (mark as read)
+clearNotif.addEventListener('click', async (e) => {
+    e.preventDefault(); 
+    try {
+        // Use the dedicated POST route for marking all as read
+        const res = await fetch('{{ route("notifications.markAllRead") }}', { 
+            method: 'POST',
+            headers: {
+                // Laravel requires a CSRF token for all POST requests
+                'X-CSRF-TOKEN': '{{ csrf_token() }}', 
+                'Content-Type': 'application/json'
             }
-        } catch (error) {
-            console.error('Error marking notifications as read:', error);
+        });
+
+        if (res.ok) {
+            // If successful, reload the list to show no unread items
+            loadNotifications(); 
+            notifDropdown.classList.add('hidden');
+        } else {
+            console.error('Failed to mark notifications as read:', res.status);
         }
-    });
+    } catch (error) {
+        console.error('Error marking notifications as read:', error);
+    }
+});
 });
 </script>
 
