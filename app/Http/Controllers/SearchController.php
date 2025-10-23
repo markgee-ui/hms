@@ -6,7 +6,7 @@ use App\Models\Patient;
 use App\Models\Visit;
 use Illuminate\Http\Request;
 
-class SearchController extends Controller
+  class SearchController extends Controller
 {
     /**
      * Handles the global search for patients and visits via AJAX.

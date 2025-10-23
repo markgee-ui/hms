@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>HMS Outpatient Module - @yield('title', 'Dashboard')</title>
-
+     @vite(['resources/css/app.css', 'resources/js/app.js']) 
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Inter Font Family -->
     <style>
@@ -239,7 +238,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         timeout = setTimeout(async () => {
             try {
-                // Ensure correct route access using blade helper
                 const searchUrl = `{{ route('search.index') }}?q=${encodeURIComponent(query)}`;
                 const res = await fetch(searchUrl);
                 
@@ -404,11 +402,9 @@ document.addEventListener('DOMContentLoaded', function () {
 clearNotif.addEventListener('click', async (e) => {
     e.preventDefault(); 
     try {
-        // Use the dedicated POST route for marking all as read
         const res = await fetch('{{ route("notifications.markAllRead") }}', { 
             method: 'POST',
             headers: {
-                // Laravel requires a CSRF token for all POST requests
                 'X-CSRF-TOKEN': '{{ csrf_token() }}', 
                 'Content-Type': 'application/json'
             }

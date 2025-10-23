@@ -7,19 +7,17 @@ use Illuminate\Http\Request;
 
 class BillingController extends Controller
 {
-    //
-    // In App\Http\Controllers\BillingController.php
-// Assuming you have a Visit model
+
 
 public function billingQueue(Request $request)
 {
     $search = $request->input('search');
 
     $query = Visit::with('patient')
-        ->where('status', 'Billing') // Key filter from Pharmacy
+        ->where('status', 'Billing') 
         ->orderBy('updated_at', 'asc');
 
-    // Search logic (optional)
+    // Search logic
     if (!empty($search)) {
         $query->whereHas('patient', function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%");
