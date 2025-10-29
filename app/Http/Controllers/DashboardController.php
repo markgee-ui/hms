@@ -48,6 +48,7 @@ class DashboardController extends Controller
             'Lab/Rad' => $rawCounts['Lab/Rad'] ?? 0,
             'Pharmacy' => $rawCounts['Pharmacy'] ?? 0,
             'Billing' => $rawCounts['Billing'] ?? 0,
+            'Inpatient' => $rawCounts['Inpatient'] ?? 0,
         ];
 
         /**
@@ -175,7 +176,7 @@ class DashboardController extends Controller
               case 'labtech':
                                     // WORKFLOW STEP 4: LAB TECHNICIAN'S QUEUE
                                      // We now query the Visit model and eager load the LabRequests (which contain the doctor info).
-                    $query = Visit::with(['patient', 'labRequests.doctor']);
+                    $query = Visit::with(['patient', 'labRequests.doctor','labRequests.tests.labTest']);
 
                             // CRITICAL FILTER: Only include Visits that are currently 
                                // in the 'Lab/Rad' status. This is the only mandatory filter.
@@ -208,7 +209,7 @@ class DashboardController extends Controller
     // WORKFLOW STEP 5: PHARMACIST'S QUEUE
     // Fetch prescriptions that have been sent from doctors and are pending dispensation.
 
-    $query = Prescription::with(['visit.patient', 'doctor']);
+    $query = Prescription::with(['visit.patient', 'doctor','items.medication']);
 
     // Only prescriptions currently awaiting pharmacy action
     $query->where('status', 'Pending');

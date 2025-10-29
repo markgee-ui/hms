@@ -18,7 +18,6 @@ class LabRequest extends Model
     protected $fillable = [
         'visit_id',
         'doctor_id',
-        'tests_requested',
         'results',
         'status',
         'lab_tech_id',
@@ -55,5 +54,9 @@ class LabRequest extends Model
     public function labTech(): BelongsTo
     {
         return $this->belongsTo(User::class, 'lab_tech_id');
+    }
+    public function tests()
+    {
+        return $this->hasMany(LabRequestTest::class);
     }
 }

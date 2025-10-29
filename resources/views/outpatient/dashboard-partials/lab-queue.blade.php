@@ -90,20 +90,30 @@
                                         <span class="text-xs text-red-500">No requests found.</span>
                                     @else
                                         @foreach($visit->labRequests as $req)
-                                            <div class="mb-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
-                                                <div class="flex justify-between items-center">
-                                                    <div class="font-semibold text-gray-900 text-xs sm:text-sm">
-                                                        {{ implode(', ', $req->tests_requested) }}
-                                                        <span class="text-xs text-gray-500 block sm:inline">(Dr. {{ $req->doctor->name ?? 'Unknown' }})</span>
-                                                    </div>
-                                                    <span class="px-2 py-1 ml-2 rounded-full text-xs font-semibold 
-                                                        @if($req->status == 'Completed') bg-green-100 text-green-700 
-                                                        @else bg-yellow-100 text-yellow-700 @endif">
-                                                        {{ $req->status }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        @endforeach
+    <div class="mb-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
+        <div class="flex justify-between items-center">
+            <div class="font-semibold text-gray-900 text-xs sm:text-sm">
+                {{-- Display all test names linked to this request --}}
+                @php
+                    $testNames = $req->tests->map(fn($t) => $t->labTest->name ?? 'Unknown Test')->toArray();
+                @endphp
+
+                {{ implode(', ', $testNames) }}
+
+                <span class="text-xs text-gray-500 block sm:inline">
+                    ({{ $req->doctor->name ?? 'Unknown' }})
+                </span>
+            </div>
+
+            <span class="px-2 py-1 ml-2 rounded-full text-xs font-semibold 
+                @if($req->status == 'Completed') bg-green-100 text-green-700 
+                @else bg-yellow-100 text-yellow-700 @endif">
+                {{ $req->status }}
+            </span>
+        </div>
+    </div>
+@endforeach
+
                                     @endif
                                 </td>
 

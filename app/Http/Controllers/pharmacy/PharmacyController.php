@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Prescription;
 use App\Models\Drug;
 use App\Models\Dispense;
+
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Notifications\NewBillingPatientNotification; 
@@ -64,33 +65,40 @@ class PharmacyController extends Controller
     /**
      * NEW: Display detailed patient information, prescription, and drug availability check.
      */
-    public function viewPrescription($id)
-    {
-        // Load the prescription with necessary relationships: Patient, Visit, Consultation
-        $prescription = Prescription::with([
-            'visit.patient', 
-            'visit.consultation', 
-            'doctor'
-        ])->findOrFail($id);
-        
-        // --- SIMULATED DRUG AVAILABILITY CHECK ---
-        // In a real system, you would parse $prescription->prescription_details 
-        // and check against the Drug/Inventory model (Drug::whereIn(...)->get()).
-        
-        // Simulation: Assume a random availability status for demonstration
-        $isAvailable = (bool)rand(0, 1);
-        
-        $drugAvailability = [
-            'isAvailable' => $isAvailable,
-            'stockLevel' => $isAvailable ? rand(10, 100) : 0,
-            'simulatedCheckNote' => $isAvailable 
-                ? 'Check successful. Stock level is sufficient.' 
-                : 'Warning: Stock is currently zero. Requires ordering or substitution.'
-        ];
+   public function viewPrescription($id)
+{
+    // Load the prescription along with all related entities
+    $prescription = Prescription::with([
+        'visit.patient',
+        'visit.consultation',
+        'doctor',
+        'items.medication' 
+    ])->findOrFail($id);
 
-        // Assuming a view named 'outpatient.pharmacy.view' will display this data
-        return view('outpatient.pharmacy.view', compact('prescription', 'drugAvailability'));
+    // --- REAL DRUG AVAILABILITY SIMULATION ---
+    // In a real implementation, you’d check the availability against the actual Drug or Inventory model.
+    // For now, we simulate it for each medication item.
+    $drugAvailability = [];
+
+    foreach ($prescription->items as $item) {
+        $isAvailable = (bool)rand(0, 1);
+        $isAllAvailable = collect($drugAvailability)->every(fn($drug) => $drug['isAvailable']);
+        $drugAvailability[] = [
+            'medication'   => $item->medication->name ?? 'Unknown Medication',
+            'dosage'       => $item->dosage ?? '-',
+            'frequency'    => $item->frequency ?? '-',
+            'duration'     => $item->duration ?? '-',
+            'quantity'     => $item->quantity,
+            'isAvailable'  => $isAvailable,
+            'stockLevel'   => $isAvailable ? rand(10, 100) : 0,
+            'statusMessage' => $isAvailable
+                ? 'Available — sufficient stock.'
+                : 'Out of stock — consider ordering or substitution.'
+        ];
     }
+
+    return view('outpatient.pharmacy.view', compact('prescription', 'drugAvailability','isAllAvailable'));
+}
 
     /**
      * Quick action to process a specific prescription (simple status change).

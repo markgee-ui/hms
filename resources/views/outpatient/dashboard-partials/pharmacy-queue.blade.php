@@ -93,14 +93,33 @@
                                     </div>
                                 </td>
 
-                                <td class="px-6 py-4 text-gray-700">
-                                    <div class="font-semibold text-gray-900 text-xs sm:text-sm">
-                                      {{ $prescription->prescription_details ?? 'No details provided' }}
-                                        <span class="text-xs text-gray-500 block sm:inline">
-                                            ({{ $prescription->doctor->name ?? 'Unassigned' }})
-                                        </span>
-                                    </div>
-                                </td>
+                           <td class="px-6 py-4 text-gray-700 align-top">
+    <div class="font-semibold text-gray-900 text-xs sm:text-sm mb-1">
+        Prescribed by:
+        <span class="text-indigo-600 font-medium">
+            {{ $prescription->doctor->name ?? 'Unassigned' }}
+        </span>
+    </div>
+
+    @if($prescription->items->isEmpty())
+        <span class="text-gray-400 italic text-sm">No items in prescription</span>
+    @else
+        <ul class="list-disc list-inside text-xs sm:text-sm text-gray-700 space-y-1">
+            @foreach($prescription->items as $item)
+                <li>
+                    <span class="font-medium">{{ $item->medication->name ?? 'N/A' }}</span>
+                    <span class="text-gray-600">
+                        — {{ $item->dosage ?? '-' }},
+                        {{ $item->frequency ?? '-' }},
+                        {{ $item->duration ?? '-' }},
+                        Qty: {{ $item->quantity }}
+                    </span>
+                </li>
+            @endforeach
+        </ul>
+    @endif
+</td>
+
 
                                 <td class="px-6 py-4 text-gray-500">
                                     {{ $prescription->created_at->diffForHumans() }}

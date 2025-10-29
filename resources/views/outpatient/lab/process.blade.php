@@ -46,14 +46,17 @@
         <h2 class="text-2xl font-semibold text-gray-800 mb-4">Requested Tests</h2>
         
         <ul class="space-y-3">
-            @forelse($labRequest->tests_requested as $test)
-                <li class="flex items-center bg-gray-100 p-3 rounded-lg shadow-sm">
-                    <i class="fas fa-flask text-indigo-500 mr-3"></i>
-                    <span class="text-gray-700 font-medium">{{ $test }}</span>
-                </li>
-            @empty
-                <li class="text-gray-500 italic">No specific tests were listed on this request.</li>
-            @endforelse
+           @forelse($labRequest->tests as $test)
+    <li class="flex items-center bg-gray-100 p-3 rounded-lg shadow-sm">
+        <i class="fas fa-flask text-indigo-500 mr-3"></i>
+        <span class="text-gray-700 font-medium">
+            {{ $test->labTest->name ?? 'Unknown Test' }}
+        </span>
+    </li>
+@empty
+    <li class="text-gray-500 italic">No specific tests were listed on this request.</li>
+@endforelse
+
         </ul>
     </div>
     

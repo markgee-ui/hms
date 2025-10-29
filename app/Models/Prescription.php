@@ -16,7 +16,7 @@ class Prescription extends Model
         'visit_id',
         'doctor_id',
         'patient_id',
-        'prescription_details',
+
         'status',
     ];
 
@@ -42,6 +42,10 @@ class Prescription extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+    public function items()
+    {
+        return $this->hasMany(PrescriptionItem::class);
     }
 }
 

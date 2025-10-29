@@ -17,7 +17,6 @@
           xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMD/cd2f7gYtJd8Ym+8gYp4H5U6fH9M1S6iUa8b/eP+X+G5z9x/u2k5z5t5+g==" 
           crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon.png') }}">
-     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 antialiased">
 
