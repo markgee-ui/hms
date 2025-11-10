@@ -1,23 +1,23 @@
-# 🏥 Hospital Management System (HMS)
+# Hospital Management System (HMS)
 
 The **Hospital Management System** is a full-featured web application designed to streamline hospital operations by integrating patient registration, triage, doctor consultation, laboratory processing, and administrative management into one cohesive system. Built with **Laravel** and **Tailwind CSS**, the system ensures secure access control for different user roles such as doctors, nurses, lab technicians, and administrators.
 
 ---
 
-## 🚀 Features
+## Features
 
-### 👨‍⚕️ For Doctors
+###  For Doctors
 - View consultation queue of assigned patients.
 - Record and update diagnoses and prescriptions.
 - Refer patients to laboratory or radiology departments.
 - Access patient history and test results.
 
-### 🧑‍⚕️ For Nurses (Triage)
+###  For Nurses (Triage)
 - Record patient vital signs and preliminary assessments.
 - Assign patients to doctors or departments.
 - Track patient flow from triage to consultation.
 
-### 🔬 For Laboratory / Radiology
+### For Laboratory / Radiology
 - View all patients referred by doctors for lab or radiology tests.
 - Process and input lab results.
 - Update test status (Pending → In Progress → Completed).
@@ -26,19 +26,19 @@ The **Hospital Management System** is a full-featured web application designed t
 -View all prescriptions
 -Bill 
 
-### 🧑‍💼 For Administrators
+###  For Administrators
 - Manage users and roles (Doctor, Nurse, Lab Tech, Admin).
 - Monitor hospital activities and view reports.
 - Maintain scalability and data integrity.
 
-### 🧾 For Patients (optional module)
+###  For Patients (optional module)
 - Online appointment booking.
 - Access to visit and test history.
 - Receive digital test results.
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 **Tech Stack:**
 - **Backend:** Laravel 10+
@@ -59,9 +59,9 @@ The **Hospital Management System** is a full-featured web application designed t
 
 ---
 
-## ⚙️ Installation Guide
+##  Installation Guide
 
-### 1️⃣ Clone the Repository
+### 1️ Clone the Repository
 ```bash
 git clone https://github.com/markgee-ui/hms.git
 cd hms
