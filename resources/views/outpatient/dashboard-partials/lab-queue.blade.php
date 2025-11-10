@@ -2,7 +2,7 @@
     <h1 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">Lab & Radiology Queue</h1>
     <p class="text-gray-600 mb-8">
         This queue displays all patients referred to the Lab or Radiology department and currently in the 
-        <strong>Lab/Rad</strong> stage. You can search, filter, and manage each request below.
+        <strong>Lab/Rad</strong> stage. You can searchi, filter, and manage each request below.
     </p>
 
     <!--  Search Form -->
