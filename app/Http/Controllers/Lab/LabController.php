@@ -51,6 +51,7 @@ class LabController extends Controller
         
         // Critically, we now update the Visit status to indicate results are ready for doctor review
         $labRequest->visit->update(['status' => 'Lab/Rad Results Ready']);
+        
 
         //notification logic
         $orderingDoctor = $labRequest->doctor;

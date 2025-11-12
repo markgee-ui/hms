@@ -52,6 +52,8 @@
 
         @elseif ($role == 'cashier')
             @include('outpatient.dashboard-partials.billing-queue', ['billingQueue' => $data['billingQueue']])  
+        @elseif ($role == 'admin')
+            @include('outpatient.dashboard-partials.admin-overview', ['data' => $data])
         @else 
             <p class="text-gray-600">No immediate tasks. View the flow status above for system overview.</p>
         @endif

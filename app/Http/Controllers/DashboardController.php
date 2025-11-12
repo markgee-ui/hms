@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\Prescription;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Admin\AdminController;
 
 class DashboardController extends Controller
 {
@@ -20,6 +21,10 @@ class DashboardController extends Controller
         $user = Auth::user();
         $role = $user->role;
         $data = [];
+ //for the asdmin view
+        if ($role === 'admin') {
+            return resolve(AdminController::class)->index();
+        }
 
         /**
          * -------------------------------------------------------------

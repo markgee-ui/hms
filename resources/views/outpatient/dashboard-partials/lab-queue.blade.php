@@ -4,7 +4,7 @@
         This queue displays all patients referred to the Lab or Radiology department and currently in the 
         <strong>Lab/Rad</strong> stage. You can searchi, filter, and manage each request below.
     </p>
-
+        
     <!--  Search Form -->
     <form method="GET" action="{{ route('outpatient.dashboard') }}" 
           class="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">

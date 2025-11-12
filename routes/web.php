@@ -11,6 +11,7 @@ use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\pharmacy\PharmacyController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Admin\AdminController;
 
 
 /*
@@ -117,4 +118,15 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/{visit}/finalize', [BillingController::class, 'finalizePayment'])->name('finalize');
 });
     // ... other future workflow steps (Lab, Pharmacy, Billing) will follow here ...
+
+   // Example routes for Admin User Management
+     Route::group(['prefix' => 'admin'], function () {
+        Route::get('/users', [AdminController::class, 'listUsers'])->name('admin.users.index');
+        Route::get('/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
+        Route::post('/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
+        Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
+        Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+        Route::patch('/users/{id}/password', [AdminController::class, 'updatePassword'])->name('admin.users.password.update'); 
+        Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+    });
 });
